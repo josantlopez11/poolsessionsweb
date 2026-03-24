@@ -93,10 +93,10 @@ app.get("/", (req, res) => {
 
 // 🎟 CHECKOUT
 app.post("/create-checkout-session", async (req, res) => {
-  console.log("📥 BODY:", req.body); // <-- esto imprime todo lo que llega
+  console.log("📩 BODY RECIBIDO:", req.body); // <-- esto imprime todo lo que llega
   try {
-    const { eventSlug, buyerName, buyerEmail, buyerPhone, ticketQuantity } = req.body;
-
+    let { eventSlug, buyerName, buyerEmail, buyerPhone, ticketQuantity } = req.body;
+    ticketQuantity = Number(ticketQuantity);
     // tu validación actual
     if (!eventSlug || !buyerName || !buyerEmail || !ticketQuantity) {
       console.log("❌ Error: Datos incompletos detectados"); // log adicional
