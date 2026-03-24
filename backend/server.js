@@ -122,7 +122,7 @@ app.post("/create-checkout-session", async (req, res) => {
         buyer_name: buyerName,
         buyer_email: buyerEmail,
         buyer_phone: buyerPhone,
-        ticket_quantity: quantity,
+        ticket_quantity: ticketQuantity,
         unit_price: event.unit_price,
         total_amount: quantity * event.unit_price,
         payment_status: "pending",
