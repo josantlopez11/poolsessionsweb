@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Boletos | POOL SESSIONS</title>
+
+<style>
+@font-face { font-family: 'Agrandir'; src: url('fonts/Agrandir-Regular.otf') format('opentype'); font-weight: 400; }
+@font-face { font-family: 'Agrandir'; src: url('fonts/Agrandir-TextBold.otf') format('opentype'); font-weight: 700; }
+
+*{ box-sizing:border-box; font-family:'Agrandir', Arial, sans-serif; }
+
+body{ margin:0; background:white; display:flex; justify-content:center; align-items:center; height:100vh; }
+
+.container{ width:90%; max-width:320px; text-align:center; }
+.logo{ width:200px; }
+.sub{ font-weight:700; font-size:14px; margin-bottom:6px; }
+.fecha{ font-size:13px; margin-bottom:30px; }
+
+.input, .btn{ width:100%; height:42px; padding:0 16px; margin-bottom:14px; border-radius:999px; border:1.5px solid #1f4d4d; font-size:13px; text-align:center; background:white; color:#333; outline:none; }
+
+select.input{ height:24px; margin-top:10px; color:#888; }
+
+.check{ width:100%; display:flex; justify-content:center; margin:15px 0 20px; }
+.check-inner{ display:flex; align-items:flex-start; gap:8px; font-size:11px; max-width:260px; text-align:left; }
+
+.btn{ background:#1f4d4d; color:white; border:none; cursor:pointer; font-weight:700; }
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<img src="assets/pool-logo.jpg" class="logo">
+<div class="sub">POOL SESSIONS x JOSH ROGOSIN</div>
+<div class="fecha">25 de Abril</div>
+
+<input type="text" placeholder="Nombre completo" id="nombre" class="input">
+<input type="email" placeholder="Correo electrónico" id="correo" class="input">
+<input type="text" placeholder="Teléfono (opcional)" id="telefono" class="input">
+
+<select id="boletos" class="input">
+  <option value="">Número de boletos</option>
+  <option value="1">1 boleto</option>
+  <option value="2">2 boletos</option>
+  <option value="3">3 boletos</option>
+  <option value="4">4 boletos</option>
+</select>
+
+<div class="check">
+  <div class="check-inner">
+    <input type="checkbox" id="politicas">
+    <label for="politicas">Acepto los términos y condiciones y el aviso de privacidad de Pool Sessions.</label>
+  </div>
+</div>
+
+<button class="btn" onclick="continuar()">Continuar</button>
+</div>
+
+<script>
+const selectBoletos = document.getElementById("boletos");
+selectBoletos.addEventListener("change", function(){ this.style.color = this.value ? "#000" : "#888"; });
+
+async function continuar(){
+  const nombre = document.getElementById("nombre").value.trim();
+  const correo = document.getElementById("correo").value.trim();
+  const telefono = document.getElementById("telefono").value.trim();
+  const boletos = document.getElementById("boletos").value;
+  const politicas = document.getElementById("politicas").checked;
+
+  if(!nombre || !correo || !boletos){ alert("Completa los campos obligatorios"); return; }
+  if(!politicas){ alert("Debes aceptar las políticas"); return; }
+
+  try{
+    const res = await fetch("http://localhost:3000/create-checkout-session", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({eventSlug:"pool-sessions-3", // AQUÍ SE CAMBIA EVENTO ! 
+      buyerName:nombre, buyerEmail:correo, buyerPhone:telefono||"0000000000", ticketQuantity:boletos })
+    });
+
+    const data = await res.json();
+
+    if(data.checkoutUrl){
+      window.location.href = data.checkoutUrl;
+    } else {
+      alert(data.error || "Error desconocido");
+    }
+  } catch(err){
+    console.error(err);
+    alert("Error conectando con pagos");
+  }
+}
+</script>
+
+</body>
+</html>
