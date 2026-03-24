@@ -94,26 +94,45 @@ app.get("/", (req, res) => {
 // 🎟 CHECKOUT
 app.post("/create-checkout-session", async (req, res) => {
   console.log("📩 BODY RECIBIDO:", req.body); // <-- esto imprime todo lo que llega
+
   try {
+    // Desestructuramos el body
     let { eventSlug, buyerName, buyerEmail, buyerPhone, ticketQuantity } = req.body;
+
+    // 🔹 Convertir a número inmediatamente
     ticketQuantity = Number(ticketQuantity);
-    // tu validación actual
+
+    // 🔹 Validación estricta
     if (!eventSlug || !buyerName || !buyerEmail || !ticketQuantity) {
-      console.log("❌ Error: Datos incompletos detectados"); // log adicional
+      console.log("❌ Error: Datos incompletos detectados:", {
+        eventSlug,
+        buyerName,
+        buyerEmail,
+        buyerPhone,
+        ticketQuantity
+      });
       return res.status(400).json({ error: "Datos incompletos" });
     }
 
+    // 🔹 Buscar evento en supabase
     const { data: event } = await supabase
       .from("events")
       .select("*")
       .eq("slug", eventSlug)
       .single();
 
-    if (!event) return res.status(500).json({ error: "Evento no encontrado" });
+    if (!event) {
+      console.log("❌ Error: Evento no encontrado:", eventSlug);
+      return res.status(500).json({ error: "Evento no encontrado" });
+    }
 
-    const quantity = Number(ticketQuantity);
-    if (quantity <= 0) return res.status(400).json({ error: "Cantidad inválida" });
+    // 🔹 Validar cantidad
+    if (ticketQuantity <= 0) {
+      console.log("❌ Error: Cantidad inválida:", ticketQuantity);
+      return res.status(400).json({ error: "Cantidad inválida" });
+    }
 
+    // 🔹 Crear orden en supabase
     const { data: order } = await supabase
       .from("orders")
       .insert({
@@ -121,26 +140,27 @@ app.post("/create-checkout-session", async (req, res) => {
         order_code: `PS-ORD-${Date.now()}`,
         buyer_name: buyerName,
         buyer_email: buyerEmail,
-        buyer_phone: buyerPhone,
+        buyer_phone: buyerPhone || "0000000000",
         ticket_quantity: ticketQuantity,
         unit_price: event.unit_price,
-        total_amount: quantity * event.unit_price,
+        total_amount: ticketQuantity * event.unit_price,
         payment_status: "pending",
       })
       .select()
       .single();
 
+    // 🔹 Crear sesión de Stripe
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       customer_email: buyerEmail,
       metadata: {
         order_id: order.id,
-        ticket_quantity: String(quantity),
+        ticket_quantity: String(ticketQuantity),
         buyer_name: buyerName,
       },
       line_items: [
         {
-          quantity,
+          quantity: ticketQuantity,
           price_data: {
             currency: "mxn",
             unit_amount: event.unit_price * 100,
@@ -155,14 +175,16 @@ app.post("/create-checkout-session", async (req, res) => {
       cancel_url: `${process.env.APP_URL}/error.html`,
     });
 
+    // 🔹 Guardar stripe_session_id
     await supabase
       .from("orders")
       .update({ stripe_session_id: session.id })
       .eq("id", order.id);
 
+    console.log("✅ Sesión de checkout creada:", session.id);
     res.json({ checkoutUrl: session.url });
   } catch (err) {
-    console.log(err);
+    console.error("❌ Error en /create-checkout-session:", err);
     res.status(500).json({ error: err.message });
   }
 });
