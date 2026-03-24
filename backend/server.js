@@ -10,7 +10,7 @@ const path = require("path");
 
 const app = express();
 
-// 🔌 CLIENTES (al inicio)
+// 🔌 CLIENTES
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -51,8 +51,7 @@ app.post(
         .eq("id", orderId)
         .single();
 
-      if (!order) return res.json({ received: true });
-      if (order.payment_status === "paid") return res.json({ received: true });
+      if (!order || order.payment_status === "paid") return res.json({ received: true });
 
       await supabase
         .from("orders")
@@ -71,7 +70,6 @@ app.post(
       }));
 
       await supabase.from("tickets").insert(tickets);
-
       console.log("🎟 Tickets generados");
     }
 
@@ -93,28 +91,26 @@ app.get("/", (req, res) => {
 
 // 🎟 CHECKOUT
 app.post("/create-checkout-session", async (req, res) => {
-  console.log("📩 BODY RECIBIDO:", req.body); // <-- esto imprime todo lo que llega
+  console.log("📩 BODY RECIBIDO:", req.body);
 
   try {
-    // Desestructuramos el body
     let { eventSlug, buyerName, buyerEmail, buyerPhone, ticketQuantity } = req.body;
 
-    // 🔹 Convertir a número inmediatamente
+    // 🔹 Convertir ticketQuantity a número
     ticketQuantity = Number(ticketQuantity);
 
-    // 🔹 Validación estricta
+    // 🔹 Validación estricta (buyerPhone opcional)
     if (!eventSlug || !buyerName || !buyerEmail || !ticketQuantity) {
       console.log("❌ Error: Datos incompletos detectados:", {
         eventSlug,
         buyerName,
         buyerEmail,
-        buyerPhone,
         ticketQuantity
       });
       return res.status(400).json({ error: "Datos incompletos" });
     }
 
-    // 🔹 Buscar evento en supabase
+    // 🔹 Buscar evento
     const { data: event } = await supabase
       .from("events")
       .select("*")
@@ -132,7 +128,7 @@ app.post("/create-checkout-session", async (req, res) => {
       return res.status(400).json({ error: "Cantidad inválida" });
     }
 
-    // 🔹 Crear orden en supabase
+    // 🔹 Crear orden
     const { data: order } = await supabase
       .from("orders")
       .insert({
@@ -149,7 +145,7 @@ app.post("/create-checkout-session", async (req, res) => {
       .select()
       .single();
 
-    // 🔹 Crear sesión de Stripe
+    // 🔹 Crear sesión Stripe
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       customer_email: buyerEmail,
