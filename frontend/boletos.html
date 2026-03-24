@@ -64,21 +64,53 @@ const selectBoletos = document.getElementById("boletos");
 selectBoletos.addEventListener("change", function(){ this.style.color = this.value ? "#000" : "#888"; });
 
 async function continuar(){
+
   const nombre = document.getElementById("nombre").value.trim();
   const correo = document.getElementById("correo").value.trim();
   const telefono = document.getElementById("telefono").value.trim();
   const boletos = document.getElementById("boletos").value;
   const politicas = document.getElementById("politicas").checked;
 
-  if(!nombre || !correo || !boletos){ alert("Completa los campos obligatorios"); return; }
-  if(!politicas){ alert("Debes aceptar las políticas"); return; }
+  // ✅ VALIDAR NOMBRE (mínimo 2 caracteres)
+  if(nombre.length < 2){
+    alert("Ingresa un nombre válido");
+    return;
+  }
+
+  // ✅ VALIDAR EMAIL (simple pero efectivo)
+  if(!correo.includes("@") || correo.length < 5){
+    alert("Correo inválido");
+    return;
+  }
+
+  // ✅ VALIDAR BOLETOS
+  if(boletos === ""){
+    alert("Selecciona número de boletos");
+    return;
+  }
+
+  // ✅ POLÍTICAS
+  if(!politicas){
+    alert("Debes aceptar las políticas");
+    return;
+  }
+
+  let telefonoFinal = telefono || "0000000000";
 
   try{
-    const res = await fetch("http://localhost:3000/create-checkout-session", {
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({eventSlug:"pool-sessions-3", // AQUÍ SE CAMBIA EVENTO ! 
-      buyerName:nombre, buyerEmail:correo, buyerPhone:telefono||"0000000000", ticketQuantity:boletos })
+
+    const res = await fetch("/create-checkout-session", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        eventSlug: "pool-sessions-3",
+        buyerName: nombre,
+        buyerEmail: correo,
+        buyerPhone: telefonoFinal,
+        ticketQuantity: boletos
+      })
     });
 
     const data = await res.json();
@@ -86,11 +118,13 @@ async function continuar(){
     if(data.checkoutUrl){
       window.location.href = data.checkoutUrl;
     } else {
-      alert(data.error || "Error desconocido");
+      console.log(data);
+      alert("Error al iniciar pago");
     }
+
   } catch(err){
-    console.error(err);
-    alert("Error conectando con pagos");
+    console.log(err);
+    alert("Error conectando con el servidor");
   }
 }
 </script>

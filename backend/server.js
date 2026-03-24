@@ -221,8 +221,8 @@ app.get("/validate", async (req, res) => {
   }
 });
 
-// 🔥 FALLBACK EXPRESS 5 COMPATIBLE PARA RAILWAY
-app.all("*", (req, res) => {
+// 🔥 FALLBACK EXPRESS 5 COMPATIBLE
+app.get(/^\/.*$/, (req, res) => {
   res.sendFile(path.resolve(frontendPath, "index.html"), (err) => {
     if (err) {
       console.error("❌ Error enviando index.html:", err);
