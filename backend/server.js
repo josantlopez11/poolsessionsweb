@@ -9,20 +9,25 @@ const path = require("path");
 
 const app = express();
 
+// --- Supabase
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+// --- Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
+// --- Frontend path
 const frontendPath = path.resolve(__dirname, "../frontend");
 console.log("📁 FRONTEND PATH:", frontendPath);
 
+// --- Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.static(frontendPath));
 
+// --- Rutas
 app.get("/", (req, res) => {
   res.sendFile(path.join(frontendPath, "index.html"));
 });
@@ -31,7 +36,7 @@ app.get("/", (req, res) => {
 app.post("/create-checkout-session", async (req, res) => {
   try {
     let { buyerName, buyerEmail, buyerPhone, ticketQuantity } = req.body;
-    const eventSlug = "pool-sessions-3"; // <-- Cambiar aquí si hay evento nuevo
+    const eventSlug = "pool-sessions-3";
 
     ticketQuantity = Number(ticketQuantity);
 
@@ -59,11 +64,12 @@ app.post("/create-checkout-session", async (req, res) => {
         ticket_quantity: ticketQuantity,
         unit_price: event.unit_price,
         total_amount: ticketQuantity * event.unit_price,
-        payment_status: "pending", // <-- cambiar a "paid" cuando quieras marcar como pagado
+        payment_status: "pending",
       })
       .select()
       .single();
 
+    // Generar tickets únicos
     const tickets = Array.from({ length: ticketQuantity }).map((_, i) => ({
       order_id: order.id,
       event_id: event.id,
@@ -74,6 +80,7 @@ app.post("/create-checkout-session", async (req, res) => {
 
     await supabase.from("tickets").insert(tickets);
 
+    // Crear sesión de Stripe
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       customer_email: buyerEmail,
@@ -98,6 +105,7 @@ app.post("/create-checkout-session", async (req, res) => {
 
     await supabase.from("orders").update({ stripe_session_id: session.id }).eq("id", order.id);
 
+    console.log("✅ Stripe checkout URL:", session.url); // Para verificar en consola
     res.json({ checkoutUrl: session.url });
   } catch (err) {
     console.error(err);
@@ -105,14 +113,14 @@ app.post("/create-checkout-session", async (req, res) => {
   }
 });
 
-// SERVIR confirmacion.html correctamente
+// --- SERVIR confirmacion.html
 app.get("/confirmacion", (req, res) => {
   res.sendFile(path.resolve(frontendPath, "confirmacion.html"), (err) => {
     if (err) res.status(500).send("Error cargando confirmacion.html");
   });
 });
 
-// API PARA DEVOLVER TICKETS CON QR
+// --- API PARA DEVOLVER TICKETS CON QR
 app.get("/success", async (req, res) => {
   const { order } = req.query;
   try {
@@ -130,7 +138,7 @@ app.get("/success", async (req, res) => {
   }
 });
 
-// VALIDACIÓN DE TICKET
+// --- VALIDACIÓN DE TICKET
 app.get("/validate", async (req, res) => {
   const { token } = req.query;
   try {
@@ -144,17 +152,21 @@ app.get("/validate", async (req, res) => {
   }
 });
 
-// CATCH-ALL PARA RUTAS NO RECONOCIDAS (DESPUÉS DE TODAS LAS RUTAS ESPECÍFICAS)
-app.get(/^\/.*$/, (req, res) => {
+// --- CATCH-ALL (solo para rutas NO usadas y que NO sean /confirmacion)
+app.get("*", (req, res) => {
+  if (req.path.startsWith("/confirmacion") || req.path.startsWith("/success") || req.path.startsWith("/validate")) {
+    return; // deja pasar estas rutas
+  }
   res.sendFile(path.resolve(frontendPath, "index.html"), (err) => {
     if (err) res.status(500).send("Error cargando la página");
   });
 });
 
+// --- Iniciar servidor
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log("🚀 SERVER RUNNING ON", PORT));
 
-// FUNCIONES AUXILIARES
+// --- FUNCIONES AUXILIARES
 function makeTicketCode(i) {
   return `PS-T-${Date.now()}-${i}-${crypto.randomBytes(2).toString("hex")}`;
 }
