@@ -23,22 +23,23 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(frontendPath));
 
-// RUTA HOME
+// ------------------- RUTAS -------------------
+
+// HOME
 app.get("/", (req, res) => {
   res.sendFile(path.join(frontendPath, "index.html"));
 });
 
-// RUTA CREAR CHECKOUT
+// CREAR CHECKOUT
 app.post("/create-checkout-session", async (req, res) => {
   try {
     let { buyerName, buyerEmail, buyerPhone, ticketQuantity } = req.body;
-    const eventSlug = "pool-sessions-3"; // <-- Cambiar aquí si hay evento nuevo
+    const eventSlug = "pool-sessions-3"; // Cambiar si hay evento nuevo
 
     ticketQuantity = Number(ticketQuantity);
 
-    if (!buyerName || !buyerEmail || !ticketQuantity) {
+    if (!buyerName || !buyerEmail || !ticketQuantity)
       return res.status(400).json({ error: "Datos incompletos" });
-    }
 
     const { data: event } = await supabase
       .from("events")
@@ -60,11 +61,12 @@ app.post("/create-checkout-session", async (req, res) => {
         ticket_quantity: ticketQuantity,
         unit_price: event.unit_price,
         total_amount: ticketQuantity * event.unit_price,
-        payment_status: "pending",
+        payment_status: "pending", // <-- por ahora QR se genera aunque no esté paid
       })
       .select()
       .single();
 
+    // CREAR TICKETS CON QR TOKEN
     const tickets = Array.from({ length: ticketQuantity }).map((_, i) => ({
       order_id: order.id,
       event_id: event.id,
@@ -106,19 +108,30 @@ app.post("/create-checkout-session", async (req, res) => {
   }
 });
 
-// SERVIR confirmacion.html correctamente (incluso con query params)
+// SERVIR confirmacion.html
 app.get("/confirmacion", (req, res) => {
   res.sendFile(path.resolve(frontendPath, "confirmacion.html"), (err) => {
     if (err) res.status(500).send("Error cargando confirmacion.html");
   });
 });
 
-// API PARA DEVOLVER TICKETS CON QR
+// ------------------- CONFIRMACION DATA -------------------
 app.get("/confirmacion-data", async (req, res) => {
   const { order } = req.query;
   if (!order) return res.status(400).json({ error: "Falta order id" });
 
   try {
+    const { data: orderData } = await supabase
+      .from("orders")
+      .select("payment_status, buyer_name, buyer_email, ticket_quantity, event_id")
+      .eq("id", order)
+      .single();
+
+    if (!orderData) return res.status(404).json({ error: "Orden no encontrada" });
+
+    // ⚠️ Por ahora mostramos QR aunque payment_status sea "pending"
+    // Cambiar a: if(orderData.payment_status !== "paid") return ... cuando Stripe esté live
+
     const { data: tickets } = await supabase
       .from("tickets")
       .select("*, event:event_id(*)")
@@ -134,8 +147,8 @@ app.get("/confirmacion-data", async (req, res) => {
           event_date: t.event.date,
           event_time: t.event.time,
           venue: t.event.venue,
-          buyer_name: t.buyer_name,
-          buyer_email: t.buyer_email,
+          buyer_name: orderData.buyer_name,
+          buyer_email: orderData.buyer_email,
           qr,
         };
       })
@@ -148,7 +161,7 @@ app.get("/confirmacion-data", async (req, res) => {
   }
 });
 
-// VALIDACIÓN DE TICKET
+// VALIDACION DE TICKET
 app.get("/validate", async (req, res) => {
   const { token } = req.query;
   try {
@@ -172,7 +185,7 @@ app.get(/^\/(?!confirmacion).*$/, (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log("🚀 SERVER RUNNING ON", PORT));
 
-// FUNCIONES AUXILIARES
+// ------------------- FUNCIONES AUXILIARES -------------------
 function makeTicketCode(i) {
   return `PS-T-${Date.now()}-${i}-${crypto.randomBytes(2).toString("hex")}`;
 }
