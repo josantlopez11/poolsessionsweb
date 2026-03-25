@@ -27,14 +27,13 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(frontendPath, "index.html"));
 });
 
+// RUTA CREAR CHECKOUT
 app.post("/create-checkout-session", async (req, res) => {
   try {
     let { buyerName, buyerEmail, buyerPhone, ticketQuantity } = req.body;
     const eventSlug = "pool-sessions-3"; // <-- Cambiar aquí si hay evento nuevo
 
     ticketQuantity = Number(ticketQuantity);
-
-    console.log("📩 Datos procesados:", { eventSlug, buyerName, buyerEmail, buyerPhone, ticketQuantity });
 
     if (!buyerName || !buyerEmail || !ticketQuantity) {
       return res.status(400).json({ error: "Datos incompletos" });
@@ -65,6 +64,7 @@ app.post("/create-checkout-session", async (req, res) => {
       .select()
       .single();
 
+    // Generar tickets únicos
     const tickets = Array.from({ length: ticketQuantity }).map((_, i) => ({
       order_id: order.id,
       event_id: event.id,
@@ -93,7 +93,7 @@ app.post("/create-checkout-session", async (req, res) => {
           },
         },
       ],
-      success_url: `${process.env.APP_URL}/confirmacion.html?order=${order.id}`,
+      success_url: `${process.env.APP_URL}/confirmacion?order=${order.id}`,
       cancel_url: `${process.env.APP_URL}/error.html`,
     });
 
@@ -106,36 +106,32 @@ app.post("/create-checkout-session", async (req, res) => {
   }
 });
 
-// Endpoint que devuelve tickets con info completa + QR
-app.get("/confirmacion-data", async (req, res) => {
+// RUTA PARA SERVIR confirmacion.html
+app.get("/confirmacion", (req, res) => {
+  res.sendFile(path.resolve(frontendPath, "confirmacion.html"), (err) => {
+    if (err) res.status(500).send("Error cargando confirmacion.html");
+  });
+});
+
+// API PARA DEVOLVER TICKETS CON QR
+app.get("/success", async (req, res) => {
   const { order } = req.query;
   try {
     const { data: tickets } = await supabase.from("tickets").select("*").eq("order_id", order);
-    if (!tickets || tickets.length === 0) return res.json({ tickets: [] });
-
-    const ticketsWithQr = await Promise.all(
-      tickets.map(async t => {
-        const { data: event } = await supabase.from("events").select("*").eq("id", t.event_id).single();
+    const result = await Promise.all(
+      tickets.map(async (t) => {
         const qr = await QRCode.toDataURL(`${process.env.APP_URL}/validate?token=${t.qr_token}`);
-        return {
-          ...t,
-          qr,
-          event_name: event.name,
-          event_description: event.description,
-          event_date: new Date(event.event_date).toLocaleDateString('es-MX'),
-          event_time: new Date(event.event_date).toLocaleTimeString('es-MX', { hour: '2-digit', minute:'2-digit' }),
-          venue: event.venue
-        };
+        return { ...t, qr };
       })
     );
-    res.json({ tickets: ticketsWithQr });
-  } catch(err) {
+    res.json({ tickets: result });
+  } catch (err) {
     console.error(err);
-    res.status(500).json({ tickets: [] });
+    res.status(500).json({ error: "Error generando tickets" });
   }
 });
 
-// Validación de QR
+// VALIDACIÓN DE TICKET
 app.get("/validate", async (req, res) => {
   const { token } = req.query;
   try {
@@ -149,7 +145,7 @@ app.get("/validate", async (req, res) => {
   }
 });
 
-// Cualquier otra ruta -> index.html
+// CATCH ALL PARA RUTAS NO RECONOCIDAS
 app.get(/^\/.*$/, (req, res) => {
   res.sendFile(path.resolve(frontendPath, "index.html"), (err) => {
     if (err) res.status(500).send("Error cargando la página");
@@ -159,6 +155,7 @@ app.get(/^\/.*$/, (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log("🚀 SERVER RUNNING ON", PORT));
 
+// FUNCIONES AUXILIARES
 function makeTicketCode(i) {
   return `PS-T-${Date.now()}-${i}-${crypto.randomBytes(2).toString("hex")}`;
 }
