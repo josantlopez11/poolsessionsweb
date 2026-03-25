@@ -32,7 +32,9 @@ app.post("/create-checkout-session", async (req, res) => {
 
   try {
     let { buyerName, buyerEmail, buyerPhone, ticketQuantity } = req.body;
-    const eventSlug = "pool-sessions-3"; // Fijo aquí
+
+    // ⚠️ Cambiar esto si quieres otro evento; debe coincidir con slug en supabase
+    const eventSlug = "pool-sessions-3"; 
 
     ticketQuantity = Number(ticketQuantity);
 
@@ -98,8 +100,21 @@ app.post("/create-checkout-session", async (req, res) => {
 
     await supabase.from("orders").update({ stripe_session_id: session.id }).eq("id", order.id);
 
+    // ⚠️ EN MODO TEST: Generamos tickets inmediatamente para pruebas, aunque no haya pago real
+    const tickets = Array.from({ length: ticketQuantity }).map((_, i) => ({
+      order_id: order.id,
+      event_id: event.id,
+      ticket_code: makeTicketCode(i),
+      qr_token: makeQrToken(),
+      status: "valid",
+    }));
+    await supabase.from("tickets").insert(tickets);
+    // ⚠️ RECORDATORIO: En producción, comentar la creación inmediata de tickets y usar solo webhook
+
+    console.log("🎟 Tickets generados de prueba (modo test)");
     console.log("🎉 Sesión de checkout creada:", session.id);
     res.json({ checkoutUrl: session.url });
+
   } catch (err) {
     console.error("❌ Error en /create-checkout-session:", err);
     res.status(500).json({ error: err.message });
