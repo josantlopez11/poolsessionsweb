@@ -9,35 +9,35 @@ const path = require("path");
 
 const app = express();
 
+// Supabase
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+// Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 const frontendPath = path.resolve(__dirname, "../frontend");
 console.log("📁 FRONTEND PATH:", frontendPath);
 
+// Middlewares
 app.use(cors());
 app.use(express.json());
 app.use(express.static(frontendPath));
-
-// ------------------- RUTAS -------------------
 
 // HOME
 app.get("/", (req, res) => {
   res.sendFile(path.join(frontendPath, "index.html"));
 });
 
-// CREAR CHECKOUT
+// CREATE CHECKOUT SESSION
 app.post("/create-checkout-session", async (req, res) => {
   try {
     let { buyerName, buyerEmail, buyerPhone, ticketQuantity } = req.body;
-    const eventSlug = "pool-sessions-3"; // Cambiar si hay evento nuevo
+    const eventSlug = "pool-sessions-3";
 
     ticketQuantity = Number(ticketQuantity);
-
     if (!buyerName || !buyerEmail || !ticketQuantity)
       return res.status(400).json({ error: "Datos incompletos" });
 
@@ -50,6 +50,7 @@ app.post("/create-checkout-session", async (req, res) => {
     if (!event) return res.status(500).json({ error: "Evento no encontrado" });
     if (ticketQuantity <= 0) return res.status(400).json({ error: "Cantidad inválida" });
 
+    // Crear orden
     const { data: order } = await supabase
       .from("orders")
       .insert({
@@ -61,22 +62,30 @@ app.post("/create-checkout-session", async (req, res) => {
         ticket_quantity: ticketQuantity,
         unit_price: event.unit_price,
         total_amount: ticketQuantity * event.unit_price,
-        payment_status: "pending", // <-- por ahora QR se genera aunque no esté paid
+        payment_status: "pending",
       })
       .select()
       .single();
 
-    // CREAR TICKETS CON QR TOKEN
-    const tickets = Array.from({ length: ticketQuantity }).map((_, i) => ({
-      order_id: order.id,
-      event_id: event.id,
-      ticket_code: makeTicketCode(i),
-      qr_token: makeQrToken(),
-      status: "valid",
-    }));
+    // Generar tickets y QR (aunque pending)
+    const tickets = await Promise.all(
+      Array.from({ length: ticketQuantity }).map(async (_, i) => {
+        const qr_token = makeQrToken();
+        const qr = await QRCode.toDataURL(`${process.env.APP_URL}/validate?token=${qr_token}`);
+        return {
+          order_id: order.id,
+          event_id: event.id,
+          ticket_code: makeTicketCode(i),
+          qr_token,
+          qr,
+          status: "valid",
+        };
+      })
+    );
 
     await supabase.from("tickets").insert(tickets);
 
+    // Crear sesión de Stripe
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       customer_email: buyerEmail,
@@ -108,57 +117,68 @@ app.post("/create-checkout-session", async (req, res) => {
   }
 });
 
-// SERVIR confirmacion.html
+// CONFIRMACION
 app.get("/confirmacion", (req, res) => {
   res.sendFile(path.resolve(frontendPath, "confirmacion.html"), (err) => {
     if (err) res.status(500).send("Error cargando confirmacion.html");
   });
 });
 
-// ------------------- CONFIRMACION DATA -------------------
+// ENDPOINT PARA DATA DE CONFIRMACION (QR + info)
 app.get("/confirmacion-data", async (req, res) => {
   const { order } = req.query;
   if (!order) return res.status(400).json({ error: "Falta order id" });
 
   try {
-    const { data: orderData } = await supabase
-      .from("orders")
-      .select("payment_status, buyer_name, buyer_email, ticket_quantity, event_id")
-      .eq("id", order)
-      .single();
-
-    if (!orderData) return res.status(404).json({ error: "Orden no encontrada" });
-
-    // ⚠️ Por ahora mostramos QR aunque payment_status sea "pending"
-    // Cambiar a: if(orderData.payment_status !== "paid") return ... cuando Stripe esté live
-
     const { data: tickets } = await supabase
       .from("tickets")
-      .select("*, event:event_id(*)")
+      .select("*, order:order_id(*), event:event_id(*)")
       .eq("order_id", order);
 
-    const result = await Promise.all(
-      tickets.map(async (t) => {
-        const qr = await QRCode.toDataURL(`${process.env.APP_URL}/validate?token=${t.qr_token}`);
-        return {
-          ticket_code: t.ticket_code,
-          event_name: t.event.name,
-          event_description: t.event.description,
-          event_date: t.event.date,
-          event_time: t.event.time,
-          venue: t.event.venue,
-          buyer_name: orderData.buyer_name,
-          buyer_email: orderData.buyer_email,
-          qr,
-        };
-      })
-    );
+    if (!tickets || tickets.length === 0) return res.status(404).json({ error: "No hay tickets" });
+
+    // Solo mostrar QR si pago es 'paid' (para pruebas siempre mostramos)
+    const result = tickets.map((t) => ({
+      ticket_code: t.ticket_code,
+      buyer_name: t.order.buyer_name,
+      buyer_email: t.order.buyer_email,
+      event_name: t.event.name,
+      event_description: t.event.description,
+      event_date: t.event.date,
+      event_time: t.event.time,
+      venue: t.event.venue,
+      qr: t.qr, // siempre generado aunque pending
+      payment_status: t.order.payment_status,
+    }));
 
     res.json({ tickets: result });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Error generando tickets" });
   }
+});
+
+// WEBHOOK STRIPE
+app.post("/webhook-stripe", express.raw({ type: "application/json" }), async (req, res) => {
+  const sig = req.headers['stripe-signature'];
+  let event;
+
+  try {
+    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+  } catch (err) {
+    console.error("⚠️ Webhook signature failed.", err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  if (event.type === "checkout.session.completed") {
+    const session = event.data.object;
+    const orderId = session.metadata.order_id;
+    // marcar como pagado
+    await supabase.from("orders").update({ payment_status: "paid" }).eq("id", orderId);
+    console.log(`✅ Orden ${orderId} marcada como PAID`);
+  }
+
+  res.json({ received: true });
 });
 
 // VALIDACION DE TICKET
@@ -175,17 +195,18 @@ app.get("/validate", async (req, res) => {
   }
 });
 
-// CATCH-ALL PARA RUTAS NO RECONOCIDAS (excepto /confirmacion)
+// CATCH ALL
 app.get(/^\/(?!confirmacion).*$/, (req, res) => {
   res.sendFile(path.resolve(frontendPath, "index.html"), (err) => {
     if (err) res.status(500).send("Error cargando la página");
   });
 });
 
+// PUERTO
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log("🚀 SERVER RUNNING ON", PORT));
 
-// ------------------- FUNCIONES AUXILIARES -------------------
+// FUNCIONES AUX
 function makeTicketCode(i) {
   return `PS-T-${Date.now()}-${i}-${crypto.randomBytes(2).toString("hex")}`;
 }
