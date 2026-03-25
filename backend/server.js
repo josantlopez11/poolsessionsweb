@@ -28,26 +28,15 @@ app.get("/", (req, res) => {
 });
 
 app.post("/create-checkout-session", async (req, res) => {
-  console.log("📩 BODY RECIBIDO (raw):", req.body);
-
   try {
     let { buyerName, buyerEmail, buyerPhone, ticketQuantity } = req.body;
-
-    // ⚠️ Cambiar esto si quieres otro evento; debe coincidir con slug en supabase
-    const eventSlug = "pool-sessions-3"; 
+    const eventSlug = "pool-sessions-3"; // <-- Cambiar aquí si hay evento nuevo
 
     ticketQuantity = Number(ticketQuantity);
 
-    console.log("✅ Datos procesados:", {
-      eventSlug,
-      buyerName,
-      buyerEmail,
-      buyerPhone,
-      ticketQuantity,
-    });
+    console.log("📩 Datos procesados:", { eventSlug, buyerName, buyerEmail, buyerPhone, ticketQuantity });
 
     if (!buyerName || !buyerEmail || !ticketQuantity) {
-      console.log("❌ Datos incompletos");
       return res.status(400).json({ error: "Datos incompletos" });
     }
 
@@ -71,10 +60,20 @@ app.post("/create-checkout-session", async (req, res) => {
         ticket_quantity: ticketQuantity,
         unit_price: event.unit_price,
         total_amount: ticketQuantity * event.unit_price,
-        payment_status: "pending",
+        payment_status: "pending", // <-- Revisar después si quieres marcar como "paid"
       })
       .select()
       .single();
+
+    const tickets = Array.from({ length: ticketQuantity }).map((_, i) => ({
+      order_id: order.id,
+      event_id: event.id,
+      ticket_code: makeTicketCode(i),
+      qr_token: makeQrToken(),
+      status: "valid",
+    }));
+
+    await supabase.from("tickets").insert(tickets);
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
@@ -94,74 +93,66 @@ app.post("/create-checkout-session", async (req, res) => {
           },
         },
       ],
-      success_url: `${process.env.APP_URL}/confirmacion?order=${order.id}`,
+      success_url: `${process.env.APP_URL}/confirmacion.html?order=${order.id}`,
       cancel_url: `${process.env.APP_URL}/error.html`,
     });
 
     await supabase.from("orders").update({ stripe_session_id: session.id }).eq("id", order.id);
 
-    // ⚠️ EN MODO TEST: Generamos tickets inmediatamente para pruebas, aunque no haya pago real
-    const tickets = Array.from({ length: ticketQuantity }).map((_, i) => ({
-      order_id: order.id,
-      event_id: event.id,
-      ticket_code: makeTicketCode(i),
-      qr_token: makeQrToken(),
-      status: "valid",
-    }));
-    await supabase.from("tickets").insert(tickets);
-    // ⚠️ RECORDATORIO: En producción, comentar la creación inmediata de tickets y usar solo webhook
-
-    console.log("🎟 Tickets generados de prueba (modo test)");
-    console.log("🎉 Sesión de checkout creada:", session.id);
     res.json({ checkoutUrl: session.url });
-
   } catch (err) {
-    console.error("❌ Error en /create-checkout-session:", err);
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 });
 
-app.get("/confirmacion", async (req, res) => {
+// Endpoint que devuelve tickets con info completa + QR
+app.get("/confirmacion-data", async (req, res) => {
+  const { order } = req.query;
   try {
-    const { order } = req.query;
     const { data: tickets } = await supabase.from("tickets").select("*").eq("order_id", order);
-    if (!tickets || tickets.length === 0) return res.send("<h2>Generando boletos... recarga en unos segundos</h2>");
-    const ticketHtml = await Promise.all(
-      tickets.map(async (t) => {
+    if (!tickets || tickets.length === 0) return res.json({ tickets: [] });
+
+    const ticketsWithQr = await Promise.all(
+      tickets.map(async t => {
+        const { data: event } = await supabase.from("events").select("*").eq("id", t.event_id).single();
         const qr = await QRCode.toDataURL(`${process.env.APP_URL}/validate?token=${t.qr_token}`);
-        return `<div style="margin-bottom:40px; text-align:center;">
-          <img src="/assets/pool-logo.jpg" style="width:80px"/>
-          <h3>${t.ticket_code}</h3>
-          <img src="${qr}" width="200"/>
-        </div>`;
+        return {
+          ...t,
+          qr,
+          event_name: event.name,
+          event_description: event.description,
+          event_date: new Date(event.event_date).toLocaleDateString('es-MX'),
+          event_time: new Date(event.event_date).toLocaleTimeString('es-MX', { hour: '2-digit', minute:'2-digit' }),
+          venue: event.venue
+        };
       })
     );
-    res.send(`<h1>🎟 TUS BOLETOS</h1>` + ticketHtml.join(""));
-  } catch (err) {
-    console.log(err);
-    res.status(500).send("<h2>Error generando boletos</h2>");
+    res.json({ tickets: ticketsWithQr });
+  } catch(err) {
+    console.error(err);
+    res.status(500).json({ tickets: [] });
   }
 });
 
+// Validación de QR
 app.get("/validate", async (req, res) => {
+  const { token } = req.query;
   try {
-    const { token } = req.query;
     const { data: ticket } = await supabase.from("tickets").select("*").eq("qr_token", token).single();
     if (!ticket) return res.send("❌ INVÁLIDO");
     if (ticket.status === "used") return res.send("⚠️ YA USADO");
     res.send("✅ VÁLIDO");
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).send("❌ ERROR");
   }
 });
 
+// Cualquier otra ruta -> index.html
 app.get(/^\/.*$/, (req, res) => {
   res.sendFile(path.resolve(frontendPath, "index.html"), (err) => {
-    if (err) {
-      console.error(err);
-      res.status(500).send("Error cargando la página");
-    }
+    if (err) res.status(500).send("Error cargando la página");
   });
 });
 
