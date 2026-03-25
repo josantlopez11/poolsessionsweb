@@ -106,7 +106,7 @@ app.post("/create-checkout-session", async (req, res) => {
   }
 });
 
-// RUTA PARA SERVIR confirmacion.html
+// SERVIR confirmacion.html
 app.get("/confirmacion", (req, res) => {
   res.sendFile(path.resolve(frontendPath, "confirmacion.html"), (err) => {
     if (err) res.status(500).send("Error cargando confirmacion.html");
@@ -131,7 +131,7 @@ app.get("/success", async (req, res) => {
   }
 });
 
-// VALIDACIÓN DE TICKET
+// VALIDAR QR
 app.get("/validate", async (req, res) => {
   const { token } = req.query;
   try {
@@ -147,9 +147,8 @@ app.get("/validate", async (req, res) => {
 
 // CATCH ALL PARA RUTAS NO RECONOCIDAS
 app.get(/^\/.*$/, (req, res) => {
-  res.sendFile(path.resolve(frontendPath, "index.html"), (err) => {
-    if (err) res.status(500).send("Error cargando la página");
-  });
+  // <-- Ahora cualquier otra ruta no sirve index.html simple
+  res.status(404).send("<h2>Página no encontrada</h2>");
 });
 
 const PORT = process.env.PORT || 3000;
