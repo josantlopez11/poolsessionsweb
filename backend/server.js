@@ -59,12 +59,11 @@ app.post("/create-checkout-session", async (req, res) => {
         ticket_quantity: ticketQuantity,
         unit_price: event.unit_price,
         total_amount: ticketQuantity * event.unit_price,
-        payment_status: "pending", // <-- Revisar después si quieres marcar como "paid"
+        payment_status: "pending", // <-- cambiar a "paid" cuando quieras marcar como pagado
       })
       .select()
       .single();
 
-    // Generar tickets únicos
     const tickets = Array.from({ length: ticketQuantity }).map((_, i) => ({
       order_id: order.id,
       event_id: event.id,
@@ -106,7 +105,7 @@ app.post("/create-checkout-session", async (req, res) => {
   }
 });
 
-// SERVIR confirmacion.html
+// SERVIR confirmacion.html correctamente
 app.get("/confirmacion", (req, res) => {
   res.sendFile(path.resolve(frontendPath, "confirmacion.html"), (err) => {
     if (err) res.status(500).send("Error cargando confirmacion.html");
@@ -131,7 +130,7 @@ app.get("/success", async (req, res) => {
   }
 });
 
-// VALIDAR QR
+// VALIDACIÓN DE TICKET
 app.get("/validate", async (req, res) => {
   const { token } = req.query;
   try {
@@ -145,10 +144,11 @@ app.get("/validate", async (req, res) => {
   }
 });
 
-// CATCH ALL PARA RUTAS NO RECONOCIDAS
+// CATCH-ALL PARA RUTAS NO RECONOCIDAS (DESPUÉS DE TODAS LAS RUTAS ESPECÍFICAS)
 app.get(/^\/.*$/, (req, res) => {
-  // <-- Ahora cualquier otra ruta no sirve index.html simple
-  res.status(404).send("<h2>Página no encontrada</h2>");
+  res.sendFile(path.resolve(frontendPath, "index.html"), (err) => {
+    if (err) res.status(500).send("Error cargando la página");
+  });
 });
 
 const PORT = process.env.PORT || 3000;
