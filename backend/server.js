@@ -6,40 +6,40 @@ const Stripe = require("stripe");
 const crypto = require("crypto");
 const QRCode = require("qrcode");
 const path = require("path");
+const bodyParser = require('body-parser');
 
 const app = express();
 
-// Supabase
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 const frontendPath = path.resolve(__dirname, "../frontend");
 console.log("📁 FRONTEND PATH:", frontendPath);
 
-// Middlewares
 app.use(cors());
 app.use(express.json());
 app.use(express.static(frontendPath));
 
-// HOME
+// ─── HOME ─────────────────────────────
 app.get("/", (req, res) => {
   res.sendFile(path.join(frontendPath, "index.html"));
 });
 
-// CREATE CHECKOUT SESSION
+// ─── CREAR CHECKOUT ───────────────────
 app.post("/create-checkout-session", async (req, res) => {
   try {
     let { buyerName, buyerEmail, buyerPhone, ticketQuantity } = req.body;
     const eventSlug = "pool-sessions-3";
 
     ticketQuantity = Number(ticketQuantity);
-    if (!buyerName || !buyerEmail || !ticketQuantity)
+
+    if (!buyerName || !buyerEmail || !ticketQuantity) {
       return res.status(400).json({ error: "Datos incompletos" });
+    }
 
     const { data: event } = await supabase
       .from("events")
@@ -50,7 +50,6 @@ app.post("/create-checkout-session", async (req, res) => {
     if (!event) return res.status(500).json({ error: "Evento no encontrado" });
     if (ticketQuantity <= 0) return res.status(400).json({ error: "Cantidad inválida" });
 
-    // Crear orden
     const { data: order } = await supabase
       .from("orders")
       .insert({
@@ -62,30 +61,21 @@ app.post("/create-checkout-session", async (req, res) => {
         ticket_quantity: ticketQuantity,
         unit_price: event.unit_price,
         total_amount: ticketQuantity * event.unit_price,
-        payment_status: "pending",
+        payment_status: "pending", // <-- simulamos pago
       })
       .select()
       .single();
 
-    // Generar tickets y QR (aunque pending)
-    const tickets = await Promise.all(
-      Array.from({ length: ticketQuantity }).map(async (_, i) => {
-        const qr_token = makeQrToken();
-        const qr = await QRCode.toDataURL(`${process.env.APP_URL}/validate?token=${qr_token}`);
-        return {
-          order_id: order.id,
-          event_id: event.id,
-          ticket_code: makeTicketCode(i),
-          qr_token,
-          qr,
-          status: "valid",
-        };
-      })
-    );
+    const tickets = Array.from({ length: ticketQuantity }).map((_, i) => ({
+      order_id: order.id,
+      event_id: event.id,
+      ticket_code: makeTicketCode(i),
+      qr_token: makeQrToken(),
+      status: "valid",
+    }));
 
     await supabase.from("tickets").insert(tickets);
 
-    // Crear sesión de Stripe
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       customer_email: buyerEmail,
@@ -117,14 +107,14 @@ app.post("/create-checkout-session", async (req, res) => {
   }
 });
 
-// CONFIRMACION
+// ─── SERVIR CONFIRMACION.HTML ────────
 app.get("/confirmacion", (req, res) => {
   res.sendFile(path.resolve(frontendPath, "confirmacion.html"), (err) => {
     if (err) res.status(500).send("Error cargando confirmacion.html");
   });
 });
 
-// ENDPOINT PARA DATA DE CONFIRMACION (QR + info)
+// ─── DATOS DE CONFIRMACION PARA FRONTEND ─────
 app.get("/confirmacion-data", async (req, res) => {
   const { order } = req.query;
   if (!order) return res.status(400).json({ error: "Falta order id" });
@@ -132,24 +122,26 @@ app.get("/confirmacion-data", async (req, res) => {
   try {
     const { data: tickets } = await supabase
       .from("tickets")
-      .select("*, order:order_id(*), event:event_id(*)")
+      .select("*, event:event_id(*)")
       .eq("order_id", order);
 
-    if (!tickets || tickets.length === 0) return res.status(404).json({ error: "No hay tickets" });
-
-    // Solo mostrar QR si pago es 'paid' (para pruebas siempre mostramos)
-    const result = tickets.map((t) => ({
-      ticket_code: t.ticket_code,
-      buyer_name: t.order.buyer_name,
-      buyer_email: t.order.buyer_email,
-      event_name: t.event.name,
-      event_description: t.event.description,
-      event_date: t.event.date,
-      event_time: t.event.time,
-      venue: t.event.venue,
-      qr: t.qr, // siempre generado aunque pending
-      payment_status: t.order.payment_status,
-    }));
+    const result = await Promise.all(
+      tickets.map(async (t) => {
+        // Generamos QR aunque sea pending (para pruebas)
+        const qr = await QRCode.toDataURL(`${process.env.APP_URL}/validate?token=${t.qr_token}`);
+        return {
+          ticket_code: t.ticket_code,
+          event_name: t.event.name,
+          event_description: t.event.description,
+          event_date: t.event.date,
+          event_time: t.event.time,
+          venue: t.event.venue,
+          buyer_name: t.buyer_name,
+          buyer_email: t.buyer_email,
+          qr,
+        };
+      })
+    );
 
     res.json({ tickets: result });
   } catch (err) {
@@ -158,30 +150,7 @@ app.get("/confirmacion-data", async (req, res) => {
   }
 });
 
-// WEBHOOK STRIPE
-app.post("/webhook-stripe", express.raw({ type: "application/json" }), async (req, res) => {
-  const sig = req.headers['stripe-signature'];
-  let event;
-
-  try {
-    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
-  } catch (err) {
-    console.error("⚠️ Webhook signature failed.", err.message);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
-  }
-
-  if (event.type === "checkout.session.completed") {
-    const session = event.data.object;
-    const orderId = session.metadata.order_id;
-    // marcar como pagado
-    await supabase.from("orders").update({ payment_status: "paid" }).eq("id", orderId);
-    console.log(`✅ Orden ${orderId} marcada como PAID`);
-  }
-
-  res.json({ received: true });
-});
-
-// VALIDACION DE TICKET
+// ─── VALIDACION DE TICKET ───────────
 app.get("/validate", async (req, res) => {
   const { token } = req.query;
   try {
@@ -195,18 +164,48 @@ app.get("/validate", async (req, res) => {
   }
 });
 
-// CATCH ALL
+// ─── WEBHOOK STRIPE ─────────────────
+app.post("/webhook-stripe", bodyParser.raw({ type: 'application/json' }), async (req, res) => {
+  const sig = req.headers['stripe-signature'];
+  let event;
+
+  try {
+    event = stripe.webhooks.constructEvent(
+      req.body,
+      sig,
+      process.env.STRIPE_WEBHOOK_SECRET
+    );
+  } catch (err) {
+    console.log("❌ Webhook signature verification failed:", err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object;
+    const orderId = session.metadata.order_id;
+
+    try {
+      await supabase.from('orders').update({ payment_status: 'paid', stripe_session_id: session.id }).eq('id', orderId);
+      console.log(`✅ Order ${orderId} marcado como PAID`);
+    } catch (err) {
+      console.error('Error actualizando la orden:', err);
+    }
+  }
+
+  res.status(200).send('ok');
+});
+
+// ─── CATCH-ALL PARA OTRAS RUTAS ─────
 app.get(/^\/(?!confirmacion).*$/, (req, res) => {
   res.sendFile(path.resolve(frontendPath, "index.html"), (err) => {
     if (err) res.status(500).send("Error cargando la página");
   });
 });
 
-// PUERTO
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log("🚀 SERVER RUNNING ON", PORT));
 
-// FUNCIONES AUX
+// ─── FUNCIONES AUXILIARES ───────────
 function makeTicketCode(i) {
   return `PS-T-${Date.now()}-${i}-${crypto.randomBytes(2).toString("hex")}`;
 }
