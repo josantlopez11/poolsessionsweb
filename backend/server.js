@@ -10,35 +10,27 @@ const bodyParser = require('body-parser');
 
 const app = express();
 
-// ─── SUPABASE ─────────────────────────
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// ─── STRIPE ───────────────────────────
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-// ─── FRONTEND PATH ────────────────────
 const frontendPath = path.resolve(__dirname, "../frontend");
 console.log("📁 FRONTEND PATH:", frontendPath);
 
-// ─── MIDDLEWARES ─────────────────────
-// Cors para todas las rutas
+// Middlewares
 app.use(cors());
-
-// JSON para endpoints normales (NO PARA WEBHOOK)
 app.use(express.json());
 app.use(express.static(frontendPath));
 
-// ─── RUTAS ───────────────────────────
-
-// Home
+// ─── HOME ─────────────────────────────
 app.get("/", (req, res) => {
   res.sendFile(path.join(frontendPath, "index.html"));
 });
 
-// Crear checkout
+// ─── CREAR CHECKOUT ───────────────────
 app.post("/create-checkout-session", async (req, res) => {
   try {
     let { buyerName, buyerEmail, buyerPhone, ticketQuantity } = req.body;
@@ -59,7 +51,6 @@ app.post("/create-checkout-session", async (req, res) => {
     if (!event) return res.status(500).json({ error: "Evento no encontrado" });
     if (ticketQuantity <= 0) return res.status(400).json({ error: "Cantidad inválida" });
 
-    // Crear orden
     const { data: order } = await supabase
       .from("orders")
       .insert({
@@ -71,25 +62,21 @@ app.post("/create-checkout-session", async (req, res) => {
         ticket_quantity: ticketQuantity,
         unit_price: event.unit_price,
         total_amount: ticketQuantity * event.unit_price,
-        payment_status: "pending", // simulamos pago en pruebas
+        payment_status: "pending", // <-- simulamos pago
       })
       .select()
       .single();
 
-    // Crear tickets
     const tickets = Array.from({ length: ticketQuantity }).map((_, i) => ({
       order_id: order.id,
       event_id: event.id,
       ticket_code: makeTicketCode(i),
       qr_token: makeQrToken(),
       status: "valid",
-      buyer_name: buyerName,
-      buyer_email: buyerEmail,
     }));
 
     await supabase.from("tickets").insert(tickets);
 
-    // Crear sesión Stripe
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       customer_email: buyerEmail,
@@ -121,14 +108,14 @@ app.post("/create-checkout-session", async (req, res) => {
   }
 });
 
-// Servir confirmación HTML
+// ─── SERVIR CONFIRMACION.HTML ────────
 app.get("/confirmacion", (req, res) => {
   res.sendFile(path.resolve(frontendPath, "confirmacion.html"), (err) => {
     if (err) res.status(500).send("Error cargando confirmacion.html");
   });
 });
 
-// Datos para confirmación frontend
+// ─── DATOS DE CONFIRMACION PARA FRONTEND ─────
 app.get("/confirmacion-data", async (req, res) => {
   const { order } = req.query;
   if (!order) return res.status(400).json({ error: "Falta order id" });
@@ -141,7 +128,7 @@ app.get("/confirmacion-data", async (req, res) => {
 
     const result = await Promise.all(
       tickets.map(async (t) => {
-        // Generamos QR aunque sea pending para pruebas
+        // Generamos QR aunque sea pending (para pruebas)
         const qr = await QRCode.toDataURL(`${process.env.APP_URL}/validate?token=${t.qr_token}`);
         return {
           ticket_code: t.ticket_code,
@@ -157,14 +144,14 @@ app.get("/confirmacion-data", async (req, res) => {
       })
     );
 
-    res.json({ tickets: result, status: "Pago exitoso" }); // Siempre muestra pago exitoso
+    res.json({ tickets: result });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Error generando tickets" });
   }
 });
 
-// Validar ticket
+// ─── VALIDACION DE TICKET ───────────
 app.get("/validate", async (req, res) => {
   const { token } = req.query;
   try {
@@ -178,8 +165,14 @@ app.get("/validate", async (req, res) => {
   }
 });
 
-// ─── WEBHOOK STRIPE ───────────────────
-// Este endpoint requiere RAW body para la verificación de firma
+// ─── WEBHOOK STRIPE ─────────────────
+
+// GET para test de Stripe y evitar 405
+app.get("/webhook-stripe", (req, res) => {
+  res.send("Webhook endpoint activo. Usar POST para eventos Stripe.");
+});
+
+// POST real para Stripe
 app.post("/webhook-stripe", bodyParser.raw({ type: 'application/json' }), async (req, res) => {
   const sig = req.headers['stripe-signature'];
   let event;
@@ -187,7 +180,7 @@ app.post("/webhook-stripe", bodyParser.raw({ type: 'application/json' }), async 
   try {
     event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
   } catch (err) {
-    console.log("❌ Webhook signature failed:", err.message);
+    console.log("❌ Webhook signature verification failed:", err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
@@ -206,14 +199,13 @@ app.post("/webhook-stripe", bodyParser.raw({ type: 'application/json' }), async 
   res.status(200).send('ok');
 });
 
-// Catch-all para otras rutas
+// ─── CATCH-ALL PARA OTRAS RUTAS ─────
 app.get(/^\/(?!confirmacion).*$/, (req, res) => {
   res.sendFile(path.resolve(frontendPath, "index.html"), (err) => {
     if (err) res.status(500).send("Error cargando la página");
   });
 });
 
-// Server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log("🚀 SERVER RUNNING ON", PORT));
 
