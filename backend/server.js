@@ -253,7 +253,7 @@ app.get("/confirmacion-data", async (req, res) => {
           ticket_code: t.ticket_code,
           event_name: event?.name || "POOL SESSIONS",
           event_description: event?.description || "",
-          event_date: event?.date || "",
+          event_date: event?.event_date || "",
           event_time: event?.time || "",
           venue: event?.venue || "",
           qr,

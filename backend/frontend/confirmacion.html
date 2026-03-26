@@ -1,65 +1,161 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Compra Confirmada</title>
-  <style>
-    body { font-family: sans-serif; padding: 2rem; text-align: center; }
-    .ticket { border: 1px solid #ccc; padding: 1rem; margin: 1rem auto; width: 300px; }
-    img { width: 200px; height: 200px; }
-  </style>
+<meta charset="UTF-8">
+<title>Compra Confirmada</title>
+
+<style>
+/* 🔤 FUENTE */
+@font-face {
+  font-family: 'Agrandir';
+  src: url('./fonts/Agrandir-Regular.otf');
+}
+
+body {
+  margin: 0;
+  background: #134e4a;
+  font-family: 'Agrandir', sans-serif;
+  color: white;
+  text-align: center;
+}
+
+/* HEADER */
+h1 {
+  margin-top: 40px;
+  font-size: 32px;
+  letter-spacing: 1px;
+}
+
+/* CARD */
+.card {
+  background: #f4f4f4;
+  color: #134e4a;
+  width: 340px;
+  margin: 40px auto;
+  padding: 30px 20px;
+  border-radius: 25px;
+  border: 2px solid black;
+}
+
+/* LOGO */
+.logo {
+  width: 180px;
+  margin-bottom: 15px;
+}
+
+/* ARTISTA */
+.artist {
+  font-size: 22px;
+  margin: 10px 0;
+}
+
+/* DATE */
+.date {
+  margin: 15px 0;
+  font-size: 18px;
+}
+
+/* VENUE */
+.venue {
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 20px;
+}
+
+/* QR */
+.qr {
+  width: 220px;
+  margin: 20px 0;
+}
+
+/* CODE */
+.code {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+/* LINK */
+a {
+  display: inline-block;
+  margin-top: 20px;
+  color: white;
+}
+</style>
 </head>
+
 <body>
 
-  <h1 id="title">Cargando...</h1>
+<h1 id="title">Cargando...</h1>
 
-  <div id="tickets-container"></div>
+<div id="tickets-container"></div>
 
-  <a href="/">Volver a inicio</a>
+<a href="/">Volver a inicio</a>
 
-  <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const orderId = urlParams.get("order");
+<script>
+const urlParams = new URLSearchParams(window.location.search);
+const orderId = urlParams.get("order");
 
-    const container = document.getElementById("tickets-container");
-    const title = document.getElementById("title");
+const container = document.getElementById("tickets-container");
+const title = document.getElementById("title");
 
-    if (!orderId) {
-      container.innerHTML = "<p>Orden no encontrada.</p>";
-    } else {
-      fetch(`/confirmacion-data?order=${orderId}`)
-        .then(r => r.json())
-        .then(data => {
+if (!orderId) {
+  container.innerHTML = "<p>Orden no encontrada.</p>";
+} else {
 
-          // ✅ HEADER CON NOMBRE
-          title.innerText = `¡GRACIAS ${(data.buyer_name || "INVITADO").toUpperCase()} POR TU COMPRA!`;
+  fetch(`/confirmacion-data?order=${orderId}`)
+    .then(r => r.json())
+    .then(data => {
 
-          if (!data.tickets || data.tickets.length === 0) {
-            container.innerHTML = "<p>No hay tickets.</p>";
-            return;
-          }
+      const buyerName = data.buyer_name || "INVITADO";
+      title.innerText = `¡GRACIAS ${buyerName.toUpperCase()} POR TU COMPRA!`;
 
-          data.tickets.forEach(t => {
-            const div = document.createElement("div");
-            div.classList.add("ticket");
+      if (!data.tickets || data.tickets.length === 0) {
+        container.innerHTML = "<p>No hay tickets.</p>";
+        return;
+      }
 
-            div.innerHTML = `
-              <h3>${t.event_name || "Evento"}</h3>
-              <p><strong>Fecha:</strong> ${(t.event_date || "")} ${(t.event_time || "")}</p>
-              <p><strong>Lugar:</strong> ${t.venue || ""}</p>
-              <img src="${t.qr}" alt="QR Ticket">
-              <p><small>${t.ticket_code || ""}</small></p>
-            `;
+      data.tickets.forEach(t => {
 
-            container.appendChild(div);
-          });
-        })
-        .catch(err => {
-          console.error(err);
-          container.innerHTML = "<p>Error cargando datos.</p>";
-        });
-    }
-  </script>
+        const time = t.event_time ? t.event_time.slice(0,5) : "";
+
+        const div = document.createElement("div");
+
+        div.innerHTML = `
+          <div class="card">
+
+            <img src="/assets/pool-logo.jpg" class="logo"/>
+
+            <div class="artist">
+              x<br><strong>${t.event_name || ""}</strong>
+            </div>
+
+            <div class="date">
+              ${t.event_date || ""} - ${time}
+            </div>
+
+            <div class="venue">
+              ${t.venue || ""}
+            </div>
+
+            <img src="${t.qr}" class="qr"/>
+
+            <div class="code">
+              ${t.ticket_code || ""}
+            </div>
+
+          </div>
+        `;
+
+        container.appendChild(div);
+      });
+
+    })
+    .catch(err => {
+      console.error(err);
+      container.innerHTML = "<p>Error cargando datos.</p>";
+    });
+}
+</script>
 
 </body>
 </html>
