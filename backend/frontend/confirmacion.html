@@ -39,8 +39,8 @@ h1 {
 
 /* LOGO */
 .logo {
-  width: 180px;
-  margin-bottom: 15px;
+  width: 300x;
+  margin: -15px 0 0 0;
 }
 
 /* ARTISTA */
@@ -120,13 +120,19 @@ if (!orderId) {
 
         const div = document.createElement("div");
 
+        // 🔥 LIMPIAR NOMBRE ARTISTA
+        let artistName = t.event_name || "";
+
+        // elimina "POOL SESSIONS x"
+        artistName = artistName.replace(/pool sessions\s*x\s*/i, "");
+        
         div.innerHTML = `
           <div class="card">
 
             <img src="/assets/pool-logo.jpg" class="logo"/>
 
             <div class="artist">
-              x<br><strong>${t.event_name || ""}</strong>
+              x<br><strong>${artistName}</strong>
             </div>
 
             <div class="date">
