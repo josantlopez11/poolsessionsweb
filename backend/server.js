@@ -192,12 +192,12 @@ app.get("/confirmacion", (req, res) => {
 // CONFIRMACIÓN DATA PARA FRONTEND
 // ─────────────────────────────────────
 
-console.log("ORDER ID RECIBIDO", order);
-console.log("ORDER DATA", orderData);
-
 app.get("/confirmacion-data", async (req, res) => {
   const { order } = req.query;
 
+  console.log("ORDER ID RECIBIDO", order);
+  console.log("ORDER DATA", orderData);
+  
   if (!order) {
     return res.status(400).json({ error: "Falta order id" });
   }
