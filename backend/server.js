@@ -195,64 +195,79 @@ app.get("/confirmacion", (req, res) => {
 app.get("/confirmacion-data", async (req, res) => {
   const { order } = req.query;
 
-  console.log("ORDER ID RECIBIDO", order);
-
   if (!order) {
     return res.status(400).json({ error: "Falta order id" });
   }
 
   try {
-    // 🔹 1. Traer orden (para nombre comprador)
+    console.log("🟡 ORDER:", order);
+
+    // 🔹 ORDEN
     const { data: orderData, error: orderError } = await supabase
       .from("orders")
-      .select("buyer_name")
+      .select("*")
       .eq("id", order)
       .single();
 
-    if (orderError) throw orderError;
+    if (orderError || !orderData) {
+      console.log("❌ ORDER ERROR:", orderError);
+      return res.status(404).json({ error: "Orden no encontrada" });
+    }
 
-    // 🔹 2. Traer tickets + evento
+    // 🔹 TICKETS
     const { data: tickets, error: ticketsError } = await supabase
       .from("tickets")
-      .select(`
-        ticket_code,
-        qr_token,
-        event:event_id (
-          name,
-          date,
-          time,
-          venue
-        )
-      `)
+      .select("*")
       .eq("order_id", order);
 
-    if (ticketsError) throw ticketsError;
+    if (ticketsError) {
+      console.log("❌ TICKETS ERROR:", ticketsError);
+      return res.status(500).json({ error: "Error tickets" });
+    }
 
-    // 🔹 3. Formatear datos SIN undefined
-    const formatted = await Promise.all(
+    if (!tickets || tickets.length === 0) {
+      return res.json({
+        buyer_name: orderData.buyer_name || "INVITADO",
+        tickets: [],
+      });
+    }
+
+    // 🔹 EVENTO
+    const { data: event, error: eventError } = await supabase
+      .from("events")
+      .select("*")
+      .eq("id", tickets[0].event_id)
+      .single();
+
+    if (eventError) {
+      console.log("❌ EVENT ERROR:", eventError);
+    }
+
+    const result = await Promise.all(
       tickets.map(async (t) => {
         const qr = await QRCode.toDataURL(
           `${process.env.APP_URL}/validate?token=${t.qr_token}`
         );
 
         return {
-          ticket_code: t.ticket_code || "",
-          event_name: t.event?.name || "Evento",
-          event_date: t.event?.date || "",
-          event_time: t.event?.time || "",
-          venue: t.event?.venue || "",
+          ticket_code: t.ticket_code,
+          event_name: event?.name || "POOL SESSIONS",
+          event_description: event?.description || "",
+          event_date: event?.date || "",
+          event_time: event?.time || "",
+          venue: event?.venue || "",
           qr,
         };
       })
     );
 
     res.json({
-      buyer_name: orderData?.buyer_name || "INVITADO",
-      tickets: formatted,
+      buyer_name: orderData.buyer_name || "INVITADO",
+      tickets: result,
     });
 
   } catch (err) {
-    console.error("❌ ERROR CONFIRMACION:", err);
+    console.error("❌ ERROR GENERAL:", err);
     res.status(500).json({ error: "Error cargando confirmación" });
   }
 });
