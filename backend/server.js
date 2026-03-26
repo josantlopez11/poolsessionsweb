@@ -16,9 +16,13 @@ const supabase = createClient(
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-const frontendPath = path.resolve(__dirname, "../frontend");
-console.log("📁 FRONTEND PATH:", frontendPath);
+const frontendPath = path.resolve(__dirname, "frontend");
 
+app.use(express.static(frontendPath));
+
+app.get("/confirmacion", (req, res) => {
+  res.sendFile(path.join(frontendPath, "confirmacion.html"));
+});
 
 // ─────────────────────────────────────
 // 🚨 WEBHOOK PRIMERO (ANTES DE JSON)
