@@ -374,7 +374,7 @@ async function sendTicketsEmail(orderId, buyerEmail, buyerName) {
     );
 
     await resend.emails.send({
-      from: 'POOL SESSIONS <tickets@poolsessions.mx>',
+      from: 'onboarding@resend.dev',
       to: buyerEmail,
       subject: '🎟️ Tus boletos - POOL SESSIONS',
       html: `
