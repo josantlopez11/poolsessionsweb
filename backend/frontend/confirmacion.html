@@ -5,73 +5,50 @@
 <title>Compra Confirmada</title>
 
 <style>
-/* 🔤 FUENTE */
-@font-face {
-  font-family: 'Agrandir';
-  src: url('./fonts/Agrandir-Regular.otf');
-}
-
 body {
   margin: 0;
   background: #134e4a;
-  font-family: 'Agrandir', sans-serif;
+  font-family: Arial, sans-serif;
   color: white;
   text-align: center;
 }
 
-/* HEADER */
 h1 {
   margin-top: 40px;
-  font-size: 32px;
-  letter-spacing: 1px;
+  font-size: 28px;
 }
 
-/* CARD */
-.card {
-  background: #f4f4f4;
-  color: #134e4a;
-  width: 340px;
+/* CONTENEDOR */
+.ticket-wrapper {
+  position: relative;
+  width: 360px;
   margin: 40px auto;
-  padding: 30px 20px;
-  border-radius: 25px;
-  border: 2px solid black;
 }
 
-/* LOGO */
-.logo {
-  width: 200px;
-  margin-bottom: 0px;
-}
-
-/* ARTISTA */
-.artist {
-  font-size: 22px;
-  margin: 10px 0;
-}
-
-/* DATE */
-.date {
-  margin: 15px 0;
-  font-size: 18px;
-}
-
-/* VENUE */
-.venue {
-  font-size: 16px;
-  font-weight: bold;
-  margin-bottom: 20px;
+/* IMAGEN BASE */
+.ticket-bg {
+  width: 100%;
+  border-radius: 20px;
 }
 
 /* QR */
 .qr {
-  width: 220px;
-  margin: 20px 0;
+  position: absolute;
+  bottom: 95px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 140px;
 }
 
-/* CODE */
+/* CÓDIGO */
 .code {
+  position: absolute;
+  bottom: 40px;
+  width: 100%;
+  text-align: center;
   font-size: 12px;
-  opacity: 0.7;
+  color: black;
+  letter-spacing: 1px;
 }
 
 /* LINK */
@@ -116,32 +93,12 @@ if (!orderId) {
 
       data.tickets.forEach(t => {
 
-        const time = t.event_time ? t.event_time.slice(0,5) : "";
-
         const div = document.createElement("div");
 
-        // 🔥 LIMPIAR NOMBRE ARTISTA
-        let artistName = t.event_name || "";
-
-        // elimina "POOL SESSIONS x"
-        artistName = artistName.replace(/pool sessions\s*x\s*/i, "");
-        
         div.innerHTML = `
-          <div class="card">
+          <div class="ticket-wrapper">
 
-            <img src="/assets/pool-logo.jpg" class="logo"/>
-
-            <div class="artist">
-              x<br><strong>${artistName}</strong>
-            </div>
-
-            <div class="date">
-              ${t.event_date || ""} - ${time}
-            </div>
-
-            <div class="venue">
-              ${t.venue || ""}
-            </div>
+            <img src="/assets/ticket-pool.png" class="ticket-bg"/>
 
             <img src="${t.qr}" class="qr"/>
 
