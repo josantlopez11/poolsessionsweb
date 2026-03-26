@@ -195,35 +195,63 @@ app.get("/confirmacion", (req, res) => {
 app.get("/confirmacion-data", async (req, res) => {
   const { order } = req.query;
 
+  if (!order) {
+    return res.status(400).json({ error: "Falta order id" });
+  }
+
   try {
-    const { data: tickets } = await supabase
+    // 🔹 1. Traer orden (para nombre comprador)
+    const { data: orderData, error: orderError } = await supabase
+      .from("orders")
+      .select("buyer_name")
+      .eq("id", order)
+      .single();
+
+    if (orderError) throw orderError;
+
+    // 🔹 2. Traer tickets + evento
+    const { data: tickets, error: ticketsError } = await supabase
       .from("tickets")
-      .select("*, event:event_id(*)")
+      .select(`
+        ticket_code,
+        qr_token,
+        event:event_id (
+          name,
+          date,
+          time,
+          venue
+        )
+      `)
       .eq("order_id", order);
 
-    const result = await Promise.all(
+    if (ticketsError) throw ticketsError;
+
+    // 🔹 3. Formatear datos SIN undefined
+    const formatted = await Promise.all(
       tickets.map(async (t) => {
         const qr = await QRCode.toDataURL(
           `${process.env.APP_URL}/validate?token=${t.qr_token}`
         );
 
         return {
-          ticket_code: t.ticket_code,
-          event_name: t.event.name,
-          event_date: t.event.date,
-          event_time: t.event.time,
-          venue: t.event.venue,
-          buyer_name: t.buyer_name,
-          buyer_email: t.buyer_email,
+          ticket_code: t.ticket_code || "",
+          event_name: t.event?.name || "Evento",
+          event_date: t.event?.date || "",
+          event_time: t.event?.time || "",
+          venue: t.event?.venue || "",
           qr,
         };
       })
     );
 
-    res.json({ tickets: result });
+    res.json({
+      buyer_name: orderData?.buyer_name || "INVITADO",
+      tickets: formatted,
+    });
+
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Error generando tickets" });
+    console.error("❌ ERROR CONFIRMACION:", err);
+    res.status(500).json({ error: "Error cargando confirmación" });
   }
 });
 

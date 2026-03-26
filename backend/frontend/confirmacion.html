@@ -10,42 +10,56 @@
   </style>
 </head>
 <body>
-  <h1>✅ Compra Exitosa</h1>
+
+  <h1 id="title">Cargando...</h1>
+
   <div id="tickets-container"></div>
+
   <a href="/">Volver a inicio</a>
 
   <script>
     const urlParams = new URLSearchParams(window.location.search);
     const orderId = urlParams.get("order");
 
+    const container = document.getElementById("tickets-container");
+    const title = document.getElementById("title");
+
     if (!orderId) {
-      document.getElementById("tickets-container").innerHTML = "<p>Orden no encontrada.</p>";
+      container.innerHTML = "<p>Orden no encontrada.</p>";
     } else {
       fetch(`/confirmacion-data?order=${orderId}`)
         .then(r => r.json())
         .then(data => {
+
+          // ✅ HEADER CON NOMBRE
+          title.innerText = `¡GRACIAS ${(data.buyer_name || "INVITADO").toUpperCase()} POR TU COMPRA!`;
+
           if (!data.tickets || data.tickets.length === 0) {
-            document.getElementById("tickets-container").innerHTML = "<p>No hay tickets.</p>";
+            container.innerHTML = "<p>No hay tickets.</p>";
             return;
           }
 
-          const container = document.getElementById("tickets-container");
           data.tickets.forEach(t => {
             const div = document.createElement("div");
             div.classList.add("ticket");
+
             div.innerHTML = `
-              <h3>${t.event_name}</h3>
-              <p>${t.event_description}</p>
-              <p><strong>Comprador:</strong> ${t.buyer_name} (${t.buyer_email})</p>
-              <p><strong>Fecha:</strong> ${t.event_date} ${t.event_time}</p>
-              <p><strong>Lugar:</strong> ${t.venue}</p>
-              <p><strong>Estado de pago:</strong> ${t.payment_status}</p>
+              <h3>${t.event_name || "Evento"}</h3>
+              <p><strong>Fecha:</strong> ${(t.event_date || "")} ${(t.event_time || "")}</p>
+              <p><strong>Lugar:</strong> ${t.venue || ""}</p>
               <img src="${t.qr}" alt="QR Ticket">
+              <p><small>${t.ticket_code || ""}</small></p>
             `;
+
             container.appendChild(div);
           });
+        })
+        .catch(err => {
+          console.error(err);
+          container.innerHTML = "<p>Error cargando datos.</p>";
         });
     }
   </script>
+
 </body>
 </html>
