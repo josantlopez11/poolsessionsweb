@@ -18,6 +18,9 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 const frontendPath = path.resolve(__dirname, "frontend");
 
+const { Resend } = require('resend');
+const resend = new Resend(process.env.RESEND_API_KEY);
+
 app.use(express.static(frontendPath));
 
 app.get("/confirmacion", (req, res) => {
@@ -43,11 +46,13 @@ app.post("/webhook-stripe", express.raw({ type: "application/json" }), async (re
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
+  // 🔥 EVENTO DE PAGO COMPLETADO
   if (event.type === "checkout.session.completed") {
     const session = event.data.object;
     const orderId = session.metadata.order_id;
 
     try {
+      // ✅ 1. Actualizar orden a PAID
       await supabase
         .from("orders")
         .update({
@@ -57,8 +62,30 @@ app.post("/webhook-stripe", express.raw({ type: "application/json" }), async (re
         .eq("id", orderId);
 
       console.log("✅ Orden marcada como PAID:", orderId);
+
+      // ✅ 2. Obtener datos de la orden
+      const { data: orderData, error: orderError } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("id", orderId)
+        .single();
+
+      if (orderError || !orderData) {
+        console.error("❌ Error obteniendo orden:", orderError);
+        return;
+      }
+
+      // ✅ 3. Enviar email con tickets
+      await sendTicketsEmail(
+        orderId,
+        orderData.buyer_email,
+        orderData.buyer_name
+      );
+
+      console.log("📩 Email enviado correctamente");
+
     } catch (err) {
-      console.error("❌ Error actualizando orden:", err);
+      console.error("❌ Error en webhook:", err);
     }
   }
 
@@ -318,4 +345,48 @@ function makeTicketCode(i) {
 
 function makeQrToken() {
   return crypto.randomUUID();
+}
+
+
+// RESEND DE CORREO CON QR
+
+async function sendTicketsEmail(orderId, buyerEmail, buyerName) {
+  try {
+    const { data: tickets } = await supabase
+      .from("tickets")
+      .select("*, event:event_id(*)")
+      .eq("order_id", orderId);
+
+    const ticketHTML = await Promise.all(
+      tickets.map(async (t) => {
+        const qr = await QRCode.toDataURL(`${process.env.APP_URL}/validate?token=${t.qr_token}`);
+
+        return `
+          <div style="margin-bottom:30px;">
+            <h3>${t.event.name}</h3>
+            <p>${t.event.date} ${t.event.time}</p>
+            <p>${t.event.venue}</p>
+            <img src="${qr}" width="150"/>
+            <p>${t.ticket_code}</p>
+          </div>
+        `;
+      })
+    );
+
+    await resend.emails.send({
+      from: 'POOL SESSIONS <tickets@poolsessions.mx>',
+      to: buyerEmail,
+      subject: '🎟️ Tus boletos - POOL SESSIONS',
+      html: `
+        <h2>¡Gracias ${buyerName} por tu compra!</h2>
+        <p>Aquí están tus boletos:</p>
+        ${ticketHTML.join("")}
+      `
+    });
+
+    console.log("📩 Email enviado a", buyerEmail);
+
+  } catch (err) {
+    console.error("Error enviando email:", err);
+  }
 }
