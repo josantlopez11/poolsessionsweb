@@ -189,8 +189,11 @@ app.get("/confirmacion", (req, res) => {
 
 
 // ─────────────────────────────────────
-// DATA PARA FRONTEND
+// CONFIRMACIÓN DATA PARA FRONTEND
 // ─────────────────────────────────────
+
+console.log("ORDER ID RECIBIDO", order);
+console.log("ORDER DATA", orderData);
 
 app.get("/confirmacion-data", async (req, res) => {
   const { order } = req.query;
