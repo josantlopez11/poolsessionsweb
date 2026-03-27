@@ -8,7 +8,6 @@
 
 <style>
 
-/* 🔤 FUENTE AGRANDIR */
 @font-face {
   font-family: "Agrandir";
   src: url("/fonts/Agrandir-Regular.otf") format("opentype");
@@ -22,7 +21,6 @@ body {
   font-family: Arial, sans-serif;
   color: white;
 
-  /* 🔥 CENTRADO REAL */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -46,13 +44,12 @@ h1 {
   padding-bottom: 35px;
 }
 
-/* TICKET WRAPPER */
+/* WRAPPER */
 .ticket-wrapper {
   position: relative;
   width: 85%;
   max-width: 380px;
-
-  margin: 0 auto; /* 🔥 centrado perfecto real */
+  margin: 0 auto;
 }
 
 /* BACKGROUND */
@@ -62,24 +59,36 @@ h1 {
   display: block;
 }
 
-/* QR (más pequeño + más abajo) */
+/* QR (más grande que antes) */
 .qr {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  bottom: 68px;   /* 🔽 bajado */
-  width: 170px;   /* 🔽 más pequeño */
+  bottom: 66px;
+  width: 190px; /* 🔥 antes 170px */
 }
 
-/* CÓDIGO */
+/* CÓDIGO (más abajo) */
 .code {
   position: absolute;
-  bottom: 80px;
+  bottom: 95px; /* 🔽 más abajo */
   width: 100%;
   text-align: center;
   font-size: 6px;
   color: black;
   letter-spacing: 1px;
+}
+
+/* NÚMERO DE BOLETO */
+.ticket-number {
+  position: absolute;
+  bottom: 10px;
+  width: 100%;
+  text-align: center;
+  font-size: 14px;
+  color: white;
+  opacity: 0.85;
+  font-family: "Agrandir", Arial, sans-serif;
 }
 
 /* BOTÓN */
@@ -94,7 +103,7 @@ a {
   opacity: 0.9;
 }
 
-/* 📱 MOBILE */
+/* MOBILE */
 @media (max-width: 480px) {
 
   h1 {
@@ -108,12 +117,17 @@ a {
   }
 
   .qr {
-    width: 150px;  /* aún más pequeño en mobile */
-    bottom: 64px;
+    width: 165px;
+    bottom: 62px;
   }
 
   .code {
     font-size: 6px;
+    bottom: 90px;
+  }
+
+  .ticket-number {
+    font-size: 12px;
   }
 }
 
@@ -136,7 +150,7 @@ const orderId = urlParams.get("order");
 const container = document.getElementById("tickets-container");
 const title = document.getElementById("title");
 
-/* 🔥 SOLO PRIMER NOMBRE */
+/* SOLO PRIMER NOMBRE */
 function getFirstName(fullName) {
   if (!fullName) return "INVITADO";
   return fullName.trim().split(" ")[0];
@@ -158,7 +172,9 @@ if (!orderId) {
         return;
       }
 
-      data.tickets.forEach(t => {
+      data.tickets.forEach((t, index) => {
+
+        const ticketNumber = index + 1;
 
         const div = document.createElement("div");
 
@@ -171,6 +187,10 @@ if (!orderId) {
 
             <div class="code">
               ${t.ticket_code || ""}
+            </div>
+
+            <div class="ticket-number">
+              ${ticketNumber}
             </div>
 
           </div>
