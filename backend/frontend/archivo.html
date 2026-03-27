@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARCHIVO - POOL SESSIONS</title>
+
+<style>
+
+@font-face {
+  font-family: 'Agrandir';
+  src: url('fonts/Agrandir-Regular.otf') format('opentype');
+}
+
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:'Agrandir';
+}
+
+body{
+  background:white;
+  color:#134e4a;
+}
+
+/* HEADER */
+.header{
+  text-align:center;
+  padding:20px;
+  font-weight:700;
+  letter-spacing:2px;
+  font-size:18px;
+}
+
+/* CONTENEDOR */
+.container{
+  display:flex;
+  gap:10px;
+  height:80vh;
+  padding:0 10px;
+}
+
+/* COLUMNAS */
+.column{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  overflow-y:auto;
+}
+
+/* FOTO */
+.photo{
+  width:100%;
+  aspect-ratio:1/1;
+  border-radius:12px;
+  background:linear-gradient(135deg, #d9f0ec, #b8e3db);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:12px;
+  letter-spacing:2px;
+  cursor:pointer;
+}
+
+/* LIGHTBOX */
+.lightbox{
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:rgba(0,0,0,0.85);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  z-index:1000;
+}
+
+.lightbox.active{
+  display:flex;
+}
+
+/* IMAGEN GRANDE */
+.lightbox-img{
+  width:90%;
+  max-width:500px;
+  aspect-ratio:1/1;
+  border-radius:12px;
+  background:linear-gradient(135deg, #d9f0ec, #b8e3db);
+}
+
+/* TEXTO */
+.lightbox-text{
+  margin-top:15px;
+  color:white;
+  font-size:14px;
+  text-align:center;
+  max-width:80%;
+}
+
+/* BACK */
+.back{
+  display:block;
+  text-align:center;
+  margin:20px 0 40px;
+  text-decoration:none;
+  color:#134e4a;
+  font-size:14px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="header">ARCHIVO</div>
+
+<div class="container">
+
+  <!-- COLUMNA 1 -->
+  <div class="column">
+    <div class="photo" data-text="POOL SESSION 01 - MOMENTO 1">1</div>
+    <div class="photo" data-text="POOL SESSION 01 - MOMENTO 2">2</div>
+    <div class="photo" data-text="POOL SESSION 01 - MOMENTO 3">3</div>
+    <div class="photo" data-text="POOL SESSION 01 - MOMENTO 4">4</div>
+    <div class="photo" data-text="POOL SESSION 01 - MOMENTO 5">5</div>
+    <div class="photo" data-text="POOL SESSION 01 - MOMENTO 6">6</div>
+    <div class="photo" data-text="POOL SESSION 01 - MOMENTO 7">7</div>
+    <div class="photo" data-text="POOL SESSION 01 - MOMENTO 8">8</div>
+    <div class="photo" data-text="POOL SESSION 01 - MOMENTO 9">9</div>
+    <div class="photo" data-text="POOL SESSION 01 - MOMENTO 10">10</div>
+  </div>
+
+  <!-- COLUMNA 2 -->
+  <div class="column">
+    <div class="photo" data-text="POOL SESSION 02 - MOMENTO 1">1</div>
+    <div class="photo" data-text="POOL SESSION 02 - MOMENTO 2">2</div>
+    <div class="photo" data-text="POOL SESSION 02 - MOMENTO 3">3</div>
+    <div class="photo" data-text="POOL SESSION 02 - MOMENTO 4">4</div>
+    <div class="photo" data-text="POOL SESSION 02 - MOMENTO 5">5</div>
+    <div class="photo" data-text="POOL SESSION 02 - MOMENTO 6">6</div>
+    <div class="photo" data-text="POOL SESSION 02 - MOMENTO 7">7</div>
+    <div class="photo" data-text="POOL SESSION 02 - MOMENTO 8">8</div>
+    <div class="photo" data-text="POOL SESSION 02 - MOMENTO 9">9</div>
+    <div class="photo" data-text="POOL SESSION 02 - MOMENTO 10">10</div>
+  </div>
+
+</div>
+
+<a href="index.html" class="back">VOLVER</a>
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox">
+  <div class="lightbox-img"></div>
+  <div class="lightbox-text" id="lightboxText"></div>
+</div>
+
+<script>
+
+const photos = document.querySelectorAll(".photo");
+const lightbox = document.getElementById("lightbox");
+const text = document.getElementById("lightboxText");
+
+photos.forEach(p => {
+  p.addEventListener("click", () => {
+    text.innerText = p.getAttribute("data-text");
+    lightbox.classList.add("active");
+  });
+});
+
+lightbox.addEventListener("click", () => {
+  lightbox.classList.remove("active");
+});
+
+</script>
+
+</body>
+</html>

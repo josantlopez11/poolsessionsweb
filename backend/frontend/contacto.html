@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CONTACTO - POOL SESSIONS</title>
+
+<style>
+
+@font-face {
+  font-family: 'Agrandir';
+  src: url('fonts/Agrandir-Regular.otf') format('opentype');
+}
+
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:'Agrandir';
+}
+
+body{
+  background:white;
+  color:#134e4a;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+}
+
+/* HEADER */
+.header{
+  margin-top:30px;
+  font-size:18px;
+  letter-spacing:2px;
+  font-weight:700;
+}
+
+/* FORM */
+.form{
+  width:90%;
+  max-width:420px;
+  margin-top:30px;
+  display:flex;
+  flex-direction:column;
+  gap:15px;
+}
+
+/* INPUTS */
+input, textarea{
+  width:100%;
+  padding:12px;
+  border:1px solid #134e4a;
+  border-radius:8px;
+  font-size:14px;
+  color:#134e4a;
+  outline:none;
+}
+
+textarea{
+  min-height:120px;
+  resize:none;
+}
+
+/* BOTÓN */
+button{
+  margin-top:10px;
+  padding:12px;
+  border:none;
+  background:#134e4a;
+  color:white;
+  border-radius:8px;
+  font-size:14px;
+  letter-spacing:1px;
+  cursor:pointer;
+}
+
+button:hover{
+  opacity:0.8;
+}
+
+/* BACK */
+.back{
+  margin-top:30px;
+  text-decoration:none;
+  color:#134e4a;
+  font-size:14px;
+}
+
+.status{
+  margin-top:10px;
+  font-size:13px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="header">CONTACTO</div>
+
+<form class="form" id="contactForm">
+
+  <input type="text" name="name" placeholder="Nombre" required>
+
+  <input type="email" name="email" placeholder="Correo electrónico" required>
+
+  <input type="text" name="subject" placeholder="Asunto" required>
+
+  <textarea name="message" placeholder="Mensaje" required></textarea>
+
+  <button type="submit">ENVIAR</button>
+
+  <div class="status" id="status"></div>
+
+</form>
+
+<a href="index.html" class="back">VOLVER</a>
+
+<script>
+
+const form = document.getElementById("contactForm");
+const status = document.getElementById("status");
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const data = Object.fromEntries(new FormData(form));
+
+  status.innerText = "Enviando...";
+
+  try {
+    const res = await fetch("/api/contact", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(data)
+    });
+
+    const result = await res.json();
+
+    if (result.success) {
+      status.innerText = "Mensaje enviado correctamente";
+      form.reset();
+    } else {
+      status.innerText = "Error al enviar";
+    }
+
+  } catch (err) {
+    status.innerText = "Error de conexión";
+  }
+
+});
+
+</script>
+
+</body>
+</html>
