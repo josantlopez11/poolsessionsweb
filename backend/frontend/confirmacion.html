@@ -1,3 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Compra Confirmada</title>
+
+<style>
+
+@font-face {
+  font-family: "Agrandir";
+  src: url("/fonts/Agrandir-Regular.otf") format("opentype");
+  font-weight: normal;
+  font-style: normal;
+}
+
+body {
+  margin: 0;
+  background: #134e4a;
+  font-family: Arial, sans-serif;
+  color: white;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* TITULO */
+h1 {
+  margin-top: 40px;
+  font-size: 24px;
+  padding: 0 16px;
+  text-align: center;
+}
+
+/* CONTENEDOR */
+#tickets-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+  padding-bottom: 35px;
+}
+
+/* WRAPPER */
+.ticket-wrapper {
+  position: relative;
+  width: 85%;
+  max-width: 380px;
+  margin: 0 auto;
+}
+
+/* BACKGROUND */
+.ticket-bg {
+  width: 100%;
+  border-radius: 20px;
+  display: block;
+}
+
+/* QR (CORREGIDO) */
+.qr {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  
+  bottom: 80px;
+
+  width: 190px !important;
+  height: 180px !important;
+
+  object-fit: contain;
+}
+
+/* CÓDIGO */
+.code {
+  position: absolute;
+  bottom: 60px;
+  width: 100%;
+  text-align: center;
+  font-size: 6px;
+  color: black;
+  letter-spacing: 1px;
+}
+
+/* NÚMERO DE BOLETO */
+.ticket-number {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 25px;
+
+  width: auto;
+  text-align: center;
+
+  font-size: 6px;
+  color: #134e4a;
+  opacity: 0.85;
+  font-family: "Agrandir", Arial, sans-serif;
+
+  line-height: 1;
+  white-space: nowrap;
+
+  -webkit-transform: translateX(-50%);
+}
+
+/* BOTÓN */
+a {
+  display: inline-block;
+  margin-top: 26px;
+  margin-bottom: 35px;
+  color: white;
+  text-decoration: none;
+  font-family: "Agrandir", Arial, sans-serif;
+  font-size: 16px;
+  opacity: 0.9;
+}
+
+/* MOBILE */
+@media (max-width: 480px) {
+  .ticket-number {
+    bottom: 24px; /* o 23px si sigue desfasado */
+    font-size: 11px;
+  }
+
+  h1 {
+    font-size: 18px;
+    margin-top: 30px;
+  }
+
+  .ticket-wrapper {
+    width: 78%;
+    max-width: 320px;
+  }
+
+  .qr {
+    width: 140px !important;
+    height: 135px !important;
+    bottom: 75px;
+  }
+
+  .code {
+    font-size: 6px;
+    bottom: 90px;
+  }
+
+  .ticket-number {
+    font-size: 12px;
+  }
+}
+
+</style>
+</head>
+
+<body>
+
+<h1 id="title">Cargando...</h1>
+
+<div id="tickets-container"></div>
+
+<a href="/">Volver al inicio</a>
+
 <script>
 
 const urlParams = new URLSearchParams(window.location.search);
@@ -6,63 +169,27 @@ const orderId = urlParams.get("order");
 const container = document.getElementById("tickets-container");
 const title = document.getElementById("title");
 
+/* SOLO PRIMER NOMBRE */
 function getFirstName(fullName) {
   if (!fullName) return "INVITADO";
   return fullName.trim().split(" ")[0];
 }
 
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-async function fetchConfirmationWithRetry() {
-
-  let attempts = 0;
-  const maxAttempts = 20; // ~40 segundos máximo
-
-  while (attempts < maxAttempts) {
-
-    try {
-      const res = await fetch(`https://api.poolsessions.mx/confirmacion-data?order=${orderId}`);
-      const data = await res.json();
-
-      // 🔥 si ya hay tickets → render
-      if (data.tickets && data.tickets.length > 0) {
-        return data;
-      }
-
-      // 🟡 aún no listo
-      title.innerText = "Tus boletos se están generando... no cierres esta ventana";
-      container.innerHTML = `
-        <p style="opacity:0.8; text-align:center;">
-          Estamos procesando tu compra<br/>
-          Por favor espera un momento...
-        </p>
-      `;
-
-    } catch (err) {
-      console.error("retry error:", err);
-    }
-
-    await sleep(2000); // ⏱ cada 2 segundos
-    attempts++;
-  }
-
-  throw new Error("Timeout esperando boletos");
-}
-
 if (!orderId) {
   container.innerHTML = "<p>Orden no encontrada.</p>";
-
 } else {
 
-  fetchConfirmationWithRetry()
+  fetch(`https://api.poolsessions.mx/confirmacion-data?order=${orderId}`)
+    .then(r => r.json())
     .then(data => {
 
       const buyerName = getFirstName(data.buyer_name);
       title.innerText = `¡GRACIAS ${buyerName.toUpperCase()} POR TU COMPRA!`;
 
-      container.innerHTML = ""; // limpiar loading
+      if (!data.tickets || data.tickets.length === 0) {
+        container.innerHTML = "<p>No hay tickets.</p>";
+        return;
+      }
 
       data.tickets.forEach((t, index) => {
 
@@ -94,14 +221,11 @@ if (!orderId) {
     })
     .catch(err => {
       console.error(err);
-      title.innerText = "Estamos teniendo un retraso";
-      container.innerHTML = `
-        <p style="text-align:center; opacity:0.8;">
-          Tus boletos aún se están generando.<br/>
-          Por favor recarga en unos segundos.
-        </p>
-      `;
+      container.innerHTML = "<p>Error cargando datos.</p>";
     });
 }
 
 </script>
+
+</body>
+</html>
