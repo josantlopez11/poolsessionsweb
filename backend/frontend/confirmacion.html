@@ -7,6 +7,15 @@
 <title>Compra Confirmada</title>
 
 <style>
+
+/* 🔤 FUENTE AGRANDIR */
+@font-face {
+  font-family: "Agrandir";
+  src: url("/fonts/Agrandir-Regular.otf") format("opentype");
+  font-weight: normal;
+  font-style: normal;
+}
+
 body {
   margin: 0;
   background: #134e4a;
@@ -28,10 +37,10 @@ h1 {
   flex-direction: column;
   align-items: center;
   gap: 24px;
-  padding-bottom: 60px;
+  padding-bottom: 40px;
 }
 
-/* TICKET */
+/* TICKET WRAPPER */
 .ticket-wrapper {
   position: relative;
   width: 92%;
@@ -45,31 +54,31 @@ h1 {
   display: block;
 }
 
-/* QR (más grande + más abajo) */
+/* QR (como lo tenías originalmente) */
 .qr {
   position: absolute;
-  bottom: 22%;
+  bottom: 75px;
   left: 50%;
   transform: translateX(-50%);
-  width: 65%;
-  max-width: 260px;
+  width: 240px;
 }
 
-/* CÓDIGO (pegado al QR) */
+/* CÓDIGO (como lo tenías originalmente) */
 .code {
   position: absolute;
-  bottom: 15%;
+  bottom: 80px;
   width: 100%;
   text-align: center;
-  font-size: 10px;
+  font-size: 6px;
   color: black;
   letter-spacing: 1px;
 }
 
-/* LINK "volver al inicio" con Agrandir */
+/* BOTÓN VOLVER */
 a {
   display: inline-block;
-  margin-top: 20px;
+  margin-top: 30px;
+  margin-bottom: 40px; /* 👈 evita que se pegue al borde */
   color: white;
   text-decoration: none;
   font-family: "Agrandir", Arial, sans-serif;
@@ -81,7 +90,7 @@ a:hover {
   opacity: 1;
 }
 
-/* MOBILE */
+/* 📱 MOBILE RESPONSIVE */
 @media (max-width: 480px) {
 
   h1 {
@@ -92,10 +101,16 @@ a:hover {
     width: 95%;
   }
 
+  /* ajusta ligeramente para que no se sienta “mini” */
+  .qr {
+    width: 220px;
+  }
+
   .code {
-    font-size: 9px;
+    font-size: 6px;
   }
 }
+
 </style>
 </head>
 
@@ -108,6 +123,7 @@ a:hover {
 <a href="/">Volver al inicio</a>
 
 <script>
+
 const urlParams = new URLSearchParams(window.location.search);
 const orderId = urlParams.get("order");
 
@@ -157,6 +173,7 @@ if (!orderId) {
       container.innerHTML = "<p>Error cargando datos.</p>";
     });
 }
+
 </script>
 
 </body>
