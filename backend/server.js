@@ -245,7 +245,7 @@ app.post("/create-checkout-session", async (req, res) => {
           },
         },
       ],
-      success_url: `https://poolsessions.mx/confirmacion.html?order=${order.id}`,
+      success_url: `${process.env.APP_URL}/confirmacion?order=${order.id}`,
       cancel_url: `${process.env.APP_URL}/error.html`,
     });
 

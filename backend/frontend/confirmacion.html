@@ -166,7 +166,7 @@ if (!orderId) {
   container.innerHTML = "<p>Orden no encontrada.</p>";
 } else {
 
-  fetch(`/confirmacion-data?order=${orderId}`)
+  fetch(`https://api.poolsessions.mx/confirmacion-data?order=${orderId}`)
     .then(r => r.json())
     .then(data => {
 
