@@ -21,9 +21,8 @@ body {
   background: #134e4a;
   font-family: Arial, sans-serif;
   color: white;
-  text-align: center;
 
-  /* 🔥 centrado real global */
+  /* 🔥 CENTRADO REAL */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -34,6 +33,7 @@ h1 {
   margin-top: 40px;
   font-size: 24px;
   padding: 0 16px;
+  text-align: center;
 }
 
 /* CONTENEDOR */
@@ -43,15 +43,16 @@ h1 {
   flex-direction: column;
   align-items: center;
   gap: 22px;
-  padding-bottom: 30px;
+  padding-bottom: 35px;
 }
 
-/* TICKET */
+/* TICKET WRAPPER */
 .ticket-wrapper {
   position: relative;
-
   width: 85%;
-  max-width: 380px; /* 👈 más pequeño que antes */
+  max-width: 380px;
+
+  margin: 0 auto; /* 🔥 centrado perfecto real */
 }
 
 /* BACKGROUND */
@@ -61,16 +62,16 @@ h1 {
   display: block;
 }
 
-/* QR (igual que original) */
+/* QR (más pequeño + más abajo) */
 .qr {
   position: absolute;
-  bottom: 75px;
   left: 50%;
   transform: translateX(-50%);
-  width: 240px;
+  bottom: 68px;   /* 🔽 bajado */
+  width: 170px;   /* 🔽 más pequeño */
 }
 
-/* CÓDIGO (igual que original) */
+/* CÓDIGO */
 .code {
   position: absolute;
   bottom: 80px;
@@ -93,7 +94,7 @@ a {
   opacity: 0.9;
 }
 
-/* 📱 MOBILE OPTIMIZADO */
+/* 📱 MOBILE */
 @media (max-width: 480px) {
 
   h1 {
@@ -102,18 +103,17 @@ a {
   }
 
   .ticket-wrapper {
-    width: 78%;   /* 👈 más pequeño en celular */
+    width: 78%;
     max-width: 320px;
   }
 
   .qr {
-    width: 210px; /* 👈 leve reducción para mobile */
-    bottom: 70px;
+    width: 150px;  /* aún más pequeño en mobile */
+    bottom: 64px;
   }
 
   .code {
     font-size: 6px;
-    bottom: 76px;
   }
 }
 
@@ -136,6 +136,12 @@ const orderId = urlParams.get("order");
 const container = document.getElementById("tickets-container");
 const title = document.getElementById("title");
 
+/* 🔥 SOLO PRIMER NOMBRE */
+function getFirstName(fullName) {
+  if (!fullName) return "INVITADO";
+  return fullName.trim().split(" ")[0];
+}
+
 if (!orderId) {
   container.innerHTML = "<p>Orden no encontrada.</p>";
 } else {
@@ -144,7 +150,7 @@ if (!orderId) {
     .then(r => r.json())
     .then(data => {
 
-      const buyerName = data.buyer_name || "INVITADO";
+      const buyerName = getFirstName(data.buyer_name);
       title.innerText = `¡GRACIAS ${buyerName.toUpperCase()} POR TU COMPRA!`;
 
       if (!data.tickets || data.tickets.length === 0) {
