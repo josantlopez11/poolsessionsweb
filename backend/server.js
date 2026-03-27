@@ -82,7 +82,7 @@ if (event.type === "checkout.session.completed") {
       return res.status(200).send("ok");
     }
 
-    console.log("✅ Orden marcada como PAID");
+    console.log("✅ Orden marcada como PAID"); 
 
     // ─────────────────────────────────────────────
     // ✅ 2. OBTENER DATOS DE LA ORDEN (EMAIL / NOMBRE)
