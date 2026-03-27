@@ -59,13 +59,18 @@ h1 {
   display: block;
 }
 
-/* QR */
+/* QR (CORREGIDO) */
 .qr {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  bottom: 66px;
-  width: 220px;
+  
+  bottom: 80px;
+
+  width: 180px !important;
+  height: 180px !important;
+
+  object-fit: contain;
 }
 
 /* CÓDIGO */
@@ -117,8 +122,9 @@ a {
   }
 
   .qr {
-    width: 165px;
-    bottom: 62px;
+    width: 135px !important;
+    height: 135px !important;
+    bottom: 75px;
   }
 
   .code {

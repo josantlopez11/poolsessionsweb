@@ -27,20 +27,17 @@ body{
   height:100vh;
 }
 
-/* CONTENEDOR */
 .container{
   width:90%;
   max-width:360px;
   text-align:center;
 }
 
-/* LOGO */
 .logo{
   width:333px;
   margin-bottom:-35px;
 }
 
-/* TITULOS */
 .title{
   font-weight:700;
   color:#134e4a;
@@ -68,17 +65,25 @@ body{
   background:white;
 }
 
+/* TEXTO USUARIO */
+.input{
+  color:#134e4a;
+}
+
+/* PLACEHOLDER */
+.input::placeholder{
+  color:#888;
+}
+
 /* SELECT */
 .select{
   padding:6px;
 }
 
-/* ESTADO PLACEHOLDER (gris) */
 .select.placeholder{
   color:#888;
 }
 
-/* ESTADO ACTIVO (verde) */
 .select.active{
   color:#134e4a;
 }
@@ -91,9 +96,8 @@ body{
   display:flex;
   gap:8px;
   align-items:flex-start;
-
-  max-width:260px;      /* 👈 más corto */
-  margin-left:auto;     /* 👈 centrado */
+  max-width:260px;
+  margin-left:auto;
   margin-right:auto;
   line-height:1.4;
 }
@@ -102,7 +106,6 @@ body{
   margin-top:3px;
 }
 
-/* LINKS */
 .check a{
   color:#134e4a;
   text-decoration:underline;
@@ -144,14 +147,13 @@ body{
 
   <form id="form">
 
-    <input class="input" type="text" name="name" placeholder="Nombre completo" required>
+    <input class="input" type="text" name="buyerName" placeholder="Nombre completo" required>
 
-    <input class="input" type="email" name="email" placeholder="Correo electrónico" required>
+    <input class="input" type="email" name="buyerEmail" placeholder="Correo electrónico" required>
 
-    <input class="input" type="tel" name="phone" placeholder="Teléfono">
+    <input class="input" type="tel" name="buyerPhone" placeholder="Teléfono (opcional)">
 
-    <!-- 👇 IMPORTANTE: placeholder activo -->
-    <select class="select placeholder" name="quantity" required>
+    <select class="select placeholder" name="ticketQuantity" required>
       <option value="">Número de boletos</option>
       <option value="1">1 boleto</option>
       <option value="2">2 boletos</option>
@@ -178,8 +180,8 @@ body{
 
 <script>
 
-// 🎯 SELECT: gris → verde
-const select = document.querySelector("select[name='quantity']");
+// 🎯 SELECT comportamiento
+const select = document.querySelector("select[name='ticketQuantity']");
 
 select.addEventListener("change", () => {
   if(select.value){
@@ -190,7 +192,6 @@ select.addEventListener("change", () => {
     select.classList.remove("active");
   }
 });
-
 
 // 🚀 STRIPE FLOW
 const form = document.getElementById("form");
@@ -205,8 +206,13 @@ form.addEventListener("submit", async (e) => {
 
   const data = Object.fromEntries(new FormData(form));
 
+  // 🔥 limpiar teléfono vacío
+  if(!data.buyerPhone){
+    data.buyerPhone = null;
+  }
+
   try {
-    const res = await fetch("/create-checkout-session", {
+    const res = await fetch("https://api.poolsessions.mx/create-checkout-session", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -216,11 +222,12 @@ form.addEventListener("submit", async (e) => {
 
     const result = await res.json();
 
-    if(result.url){
-      window.location.href = result.url;
-    } else {
-      alert("Error al iniciar pago");
-    }
+    if(result.checkoutUrl){
+  window.location.href = result.checkoutUrl;
+  } else {
+  console.log("ERROR BACKEND:", result);
+  alert(result.error || "Error al iniciar pago");
+  }
 
   } catch (err){
     console.error(err);

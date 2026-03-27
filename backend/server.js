@@ -177,7 +177,21 @@ app.post("/create-checkout-session", async (req, res) => {
       .eq("slug", eventSlug)
       .single();
 
-    if (!event) return res.status(500).json({ error: "Evento no encontrado" });
+    if (!event) {
+      console.error("❌ EVENTO NO ENCONTRADO");
+      return res.status(500).json({ error: "Evento no encontrado" });
+    }
+
+    // 🔥 VALIDACIÓN PRO DE PRECIO
+    const price = Number(event.unit_price);
+
+    console.log("UNIT PRICE RAW:", event.unit_price);
+    console.log("UNIT PRICE TYPE:", typeof event.unit_price);
+
+    if (!price || isNaN(price)) {
+      console.error("❌ PRECIO INVÁLIDO:", event.unit_price);
+      return res.status(500).json({ error: "Precio inválido" });
+    }
 
     const { data: order } = await supabase
       .from("orders")
@@ -188,12 +202,17 @@ app.post("/create-checkout-session", async (req, res) => {
         buyer_email: buyerEmail,
         buyer_phone: buyerPhone || "0000000000",
         ticket_quantity: ticketQuantity,
-        unit_price: event.unit_price,
-        total_amount: ticketQuantity * event.unit_price,
-        payment_status: "pending", // modo test
+        unit_price: price,
+        total_amount: ticketQuantity * price,
+        payment_status: "pending",
       })
       .select()
       .single();
+
+    if (!order) {
+      console.error("❌ ERROR CREANDO ORDER");
+      return res.status(500).json({ error: "Error creando orden" });
+    }
 
     const tickets = Array.from({ length: ticketQuantity }).map((_, i) => ({
       order_id: order.id,
@@ -218,7 +237,7 @@ app.post("/create-checkout-session", async (req, res) => {
           quantity: ticketQuantity,
           price_data: {
             currency: "mxn",
-            unit_amount: event.unit_price * 100,
+            unit_amount: price * 100, // 🔥 FIX
             product_data: {
               name: event.name,
               description: event.description,
@@ -226,7 +245,7 @@ app.post("/create-checkout-session", async (req, res) => {
           },
         },
       ],
-      success_url: `${process.env.APP_URL}/confirmacion?order=${order.id}`,
+      success_url: `https://poolsessions.mx/confirmacion.html?order=${order.id}`,
       cancel_url: `${process.env.APP_URL}/error.html`,
     });
 
@@ -238,8 +257,9 @@ app.post("/create-checkout-session", async (req, res) => {
     console.log("🔥 SUCCESS URL:", `${process.env.APP_URL}/confirmacion?order=${order.id}`);
 
     res.json({ checkoutUrl: session.url });
+
   } catch (err) {
-    console.error(err);
+    console.error("❌ ERROR GENERAL:", err);
     res.status(500).json({ error: err.message });
   }
 });
