@@ -3,138 +3,233 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Confirmación | POOL SESSIONS</title>
+<title>POOL SESSIONS</title>
+
 <style>
-  body {
-    font-family: 'Arial', sans-serif;
-    background: #0d0d0d;
-    color: #f0f0f0;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-  header {
-    width: 100%;
-    background: #111;
-    padding: 20px 0;
-    text-align: center;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.5);
-  }
-  header img {
-    height: 60px;
-  }
-  main {
-    max-width: 800px;
-    width: 90%;
-    padding: 20px;
-    margin-top: 30px;
-    background: #1a1a1a;
-    border-radius: 15px;
-    box-shadow: 0 0 20px rgba(0,0,0,0.7);
-  }
-  h1 {
-    text-align: center;
-    color: #00ffea;
-    margin-bottom: 10px;
-  }
-  p {
-    text-align: center;
-    margin-bottom: 30px;
-  }
-  .ticket {
-    background: #222;
-    border: 2px solid #00ffea;
-    border-radius: 12px;
-    padding: 20px;
-    margin-bottom: 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    transition: transform 0.2s;
-  }
-  .ticket:hover {
-    transform: scale(1.03);
-    box-shadow: 0 0 20px #00ffea;
-  }
-  .ticket h2 {
-    margin: 10px 0 5px 0;
-    color: #fff;
-  }
-  .ticket h3 {
-    margin: 5px 0;
-    color: #00ffea;
-  }
-  .ticket img.qr {
-    margin-top: 15px;
-    width: 180px;
-    height: 180px;
-  }
-  .info {
-    text-align: center;
-    margin-top: 15px;
-  }
-  a.button {
-    display: inline-block;
-    margin-top: 25px;
-    padding: 12px 25px;
-    background: #00ffea;
-    color: #000;
-    text-decoration: none;
-    font-weight: bold;
-    border-radius: 8px;
-    transition: 0.2s;
-  }
-  a.button:hover {
-    background: #00d4bb;
-  }
-</style>
-</head>
-<body>
-<header>
-  <img src="assets/pool-logo.jpg" alt="POOL SESSIONS Logo">
-</header>
-<main>
-  <h1>✅ Compra Confirmada</h1>
-  <p>Recibirás tus boletos por correo. Aquí puedes verlos también:</p>
-  <div id="tickets"></div>
-  <a href="index.html" class="button">Volver al inicio</a>
-</main>
 
-<script>
-async function fetchTickets(){
-  const params = new URLSearchParams(window.location.search);
-  const order_id = params.get("order");
-  if(!order_id) return;
-
-  try{
-    const res = await fetch(`${window.location.origin}/success?order=${order_id}`);
-    const data = await res.json();
-    const container = document.getElementById("tickets");
-
-    data.tickets.forEach(t=>{
-      const div = document.createElement("div");
-      div.classList.add("ticket");
-      div.innerHTML = `
-        <h2>${t.ticket_code}</h2>
-        <h3>${t.event_name || "POOL SESSIONS"}</h3>
-        <div class="info">
-          <p>📅 ${t.event_date || "Fecha"} &nbsp; | &nbsp; 📍 ${t.venue || "Lugar"}</p>
-          <p>🎫 Cantidad: ${t.quantity || 1}</p>
-          <p>✉️ ${t.buyer_email}</p>
-        </div>
-        <img class="qr" src="${t.qr}" alt="QR del ticket">
-      `;
-      container.appendChild(div);
-    });
-  } catch(err){
-    console.error(err);
-    document.getElementById("tickets").innerHTML = "<p>Error cargando boletos, intenta recargar</p>";
-  }
+@font-face {
+  font-family: 'Agrandir';
+  src: url('fonts/Agrandir-Regular.otf') format('opentype');
 }
 
-fetchTickets();
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:'Agrandir';
+}
+
+body{
+  background:#eaeaea;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+}
+
+/* CONTENEDOR */
+.container{
+  width:90%;
+  max-width:360px;
+  text-align:center;
+}
+
+/* LOGO */
+.logo{
+  width:333px;
+  margin-bottom:-35px;
+}
+
+/* TITULOS */
+.title{
+  font-weight:700;
+  color:#134e4a;
+  font-size:14px;
+  letter-spacing:1px;
+}
+
+.date{
+  margin-top:6px;
+  margin-bottom:25px;
+  font-size:13px;
+  color:#134e4a;
+}
+
+/* INPUTS */
+.input, .select{
+  width:100%;
+  padding:12px;
+  margin-bottom:12px;
+  border-radius:20px;
+  border:1px solid #134e4a;
+  outline:none;
+  font-size:13px;
+  text-align:center;
+  background:white;
+}
+
+/* SELECT */
+.select{
+  padding:6px;
+}
+
+/* ESTADO PLACEHOLDER (gris) */
+.select.placeholder{
+  color:#888;
+}
+
+/* ESTADO ACTIVO (verde) */
+.select.active{
+  color:#134e4a;
+}
+
+/* CHECK */
+.check{
+  margin-top:10px;
+  font-size:11px;
+  color:#134e4a;
+  display:flex;
+  gap:8px;
+  align-items:flex-start;
+
+  max-width:260px;      /* 👈 más corto */
+  margin-left:auto;     /* 👈 centrado */
+  margin-right:auto;
+  line-height:1.4;
+}
+
+.check input{
+  margin-top:3px;
+}
+
+/* LINKS */
+.check a{
+  color:#134e4a;
+  text-decoration:underline;
+}
+
+/* BOTON */
+.button{
+  width:100%;
+  margin-top:15px;
+  padding:14px;
+  border:none;
+  border-radius:25px;
+  background:#134e4a;
+  color:white;
+  font-size:14px;
+  cursor:pointer;
+}
+
+.button:hover{
+  opacity:0.8;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <img src="assets/logo-pools.png" class="logo">
+
+  <div class="title">
+    POOL SESSIONS x JOSH ROGOSIN
+  </div>
+
+  <div class="date">
+    25 de Abril · 10:30 AM · Staditche Centro Cultural
+  </div>
+
+  <form id="form">
+
+    <input class="input" type="text" name="name" placeholder="Nombre completo" required>
+
+    <input class="input" type="email" name="email" placeholder="Correo electrónico" required>
+
+    <input class="input" type="tel" name="phone" placeholder="Teléfono">
+
+    <!-- 👇 IMPORTANTE: placeholder activo -->
+    <select class="select placeholder" name="quantity" required>
+      <option value="">Número de boletos</option>
+      <option value="1">1 boleto</option>
+      <option value="2">2 boletos</option>
+      <option value="3">3 boletos</option>
+      <option value="4">4 boletos</option>
+    </select>
+
+    <div class="check">
+      <input type="checkbox" id="terms" required>
+      <label for="terms">
+        Acepto los 
+        <a href="terminos-condiciones.html" target="_blank">términos y condiciones</a> 
+        y el 
+        <a href="aviso-privacidad.html" target="_blank">aviso de privacidad</a> 
+        de Pool Sessions
+      </label>
+    </div>
+
+    <button class="button" type="submit">Continuar</button>
+
+  </form>
+
+</div>
+
+<script>
+
+// 🎯 SELECT: gris → verde
+const select = document.querySelector("select[name='quantity']");
+
+select.addEventListener("change", () => {
+  if(select.value){
+    select.classList.remove("placeholder");
+    select.classList.add("active");
+  } else {
+    select.classList.add("placeholder");
+    select.classList.remove("active");
+  }
+});
+
+
+// 🚀 STRIPE FLOW
+const form = document.getElementById("form");
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  if(!document.getElementById("terms").checked){
+    alert("Debes aceptar los términos");
+    return;
+  }
+
+  const data = Object.fromEntries(new FormData(form));
+
+  try {
+    const res = await fetch("/create-checkout-session", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(data)
+    });
+
+    const result = await res.json();
+
+    if(result.url){
+      window.location.href = result.url;
+    } else {
+      alert("Error al iniciar pago");
+    }
+
+  } catch (err){
+    console.error(err);
+    alert("Error de conexión");
+  }
+
+});
+
 </script>
+
 </body>
 </html>
