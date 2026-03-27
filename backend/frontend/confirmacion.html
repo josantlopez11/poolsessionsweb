@@ -22,6 +22,11 @@ body {
   font-family: Arial, sans-serif;
   color: white;
   text-align: center;
+
+  /* 🔥 centrado real global */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 /* TITULO */
@@ -33,18 +38,20 @@ h1 {
 
 /* CONTENEDOR */
 #tickets-container {
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 24px;
-  padding-bottom: 40px;
+  gap: 22px;
+  padding-bottom: 30px;
 }
 
-/* TICKET WRAPPER */
+/* TICKET */
 .ticket-wrapper {
   position: relative;
-  width: 92%;
-  max-width: 420px;
+
+  width: 85%;
+  max-width: 380px; /* 👈 más pequeño que antes */
 }
 
 /* BACKGROUND */
@@ -54,7 +61,7 @@ h1 {
   display: block;
 }
 
-/* QR (como lo tenías originalmente) */
+/* QR (igual que original) */
 .qr {
   position: absolute;
   bottom: 75px;
@@ -63,7 +70,7 @@ h1 {
   width: 240px;
 }
 
-/* CÓDIGO (como lo tenías originalmente) */
+/* CÓDIGO (igual que original) */
 .code {
   position: absolute;
   bottom: 80px;
@@ -74,11 +81,11 @@ h1 {
   letter-spacing: 1px;
 }
 
-/* BOTÓN VOLVER */
+/* BOTÓN */
 a {
   display: inline-block;
-  margin-top: 30px;
-  margin-bottom: 40px; /* 👈 evita que se pegue al borde */
+  margin-top: 26px;
+  margin-bottom: 35px;
   color: white;
   text-decoration: none;
   font-family: "Agrandir", Arial, sans-serif;
@@ -86,28 +93,27 @@ a {
   opacity: 0.9;
 }
 
-a:hover {
-  opacity: 1;
-}
-
-/* 📱 MOBILE RESPONSIVE */
+/* 📱 MOBILE OPTIMIZADO */
 @media (max-width: 480px) {
 
   h1 {
-    font-size: 20px;
+    font-size: 18px;
+    margin-top: 30px;
   }
 
   .ticket-wrapper {
-    width: 95%;
+    width: 78%;   /* 👈 más pequeño en celular */
+    max-width: 320px;
   }
 
-  /* ajusta ligeramente para que no se sienta “mini” */
   .qr {
-    width: 220px;
+    width: 210px; /* 👈 leve reducción para mobile */
+    bottom: 70px;
   }
 
   .code {
     font-size: 6px;
+    bottom: 76px;
   }
 }
 
