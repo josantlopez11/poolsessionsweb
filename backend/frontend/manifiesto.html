@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+
+<title>Manifiesto | POOL SESSIONS</title>
+
+<style>
+@font-face {
+  font-family: 'Agrandir';
+  src: url('./fonts/Agrandir.Regular.otf') format('opentype');
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: white;
+  font-family: 'Agrandir', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* GALERÍA */
+.galeria {
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* 👈 centra horizontalmente */
+  gap: 10px; /* 👈 espacio entre imágenes */
+  padding: 40px 20px;
+}
+
+/* IMÁGENES */
+.galeria img {
+  width: 100%;
+  max-width: 600px; /* 👈 controla tamaño en desktop */
+  height: auto;
+  display: block;
+}
+
+/* MOBILE */
+@media (max-width: 768px) {
+  .galeria {
+    gap: 25px;
+    padding: 25px 15px;
+  }
+
+  .galeria img {
+    max-width: 100%;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="galeria" id="galeria"></div>
+
+<script>
+const imagenes = [
+  "m1.jpg",
+  "m2.jpg",
+  "m3.jpg"
+];
+
+const galeria = document.getElementById("galeria");
+
+imagenes.forEach(nombre => {
+  const img = new Image();
+  img.src = "./assets/" + nombre;
+  img.alt = "POOL SESSIONS";
+
+  img.loading = "lazy";
+  img.decoding = "async";
+
+  galeria.appendChild(img);
+});
+</script>
+
+</body>
+</html>

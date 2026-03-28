@@ -72,13 +72,28 @@ body{
 }
 
 /* SELECT FIX iOS + CENTER PERFECT */
-.select{
-  appearance:none;
-  -webkit-appearance:none;
-  -moz-appearance:none;
+.select {
+  width: 100%;
+  padding: 8px 40px 8px 12px; /* 🔥 más delgado + espacio flecha */
+  margin-bottom: 12px;
 
-  text-align-last:center;
-  color:#888;
+  border-radius: 20px;
+  border: 1px solid #134e4a;
+
+  font-size: 13px;
+  text-align-last: center;
+
+  background: white;
+  color: #888;
+
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24'%3E%3Cpath fill='%23134e4a' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 14px;
 }
 
 /* FIX OPTIONS */
@@ -133,6 +148,17 @@ body{
   cursor:not-allowed;
 }
 
+.volver-btn {
+  margin-top: 60px;
+  padding: 12px 20px;
+  background: transparent;
+  border: 0px;
+  color: #134e4a;
+  font-family: 'Agrandir', sans-serif;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
 </style>
 </head>
 
@@ -170,9 +196,9 @@ body{
       <input type="checkbox" id="terms" required>
       <label for="terms">
         Acepto los 
-        <a href="terminos-condiciones.html" target="_blank">términos y condiciones</a> 
+        <a href="terminos-y-condiciones.html" target="_blank">términos y condiciones</a> 
         y el 
-        <a href="aviso-privacidad.html" target="_blank">aviso de privacidad</a> 
+        <a href="aviso-de-privacidad.html" target="_blank">aviso de privacidad</a> 
         de Pool Sessions
       </label>
     </div>
@@ -183,6 +209,7 @@ body{
 
   </form>
 
+   <button class="volver-btn" onclick="window.location.href='index.html'">Volver</button>
 </div>
 
 <script>
