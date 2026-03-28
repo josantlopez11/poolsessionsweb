@@ -104,7 +104,9 @@ section {
 
 /* Responsive */
 @media (max-width: 900px) {
+
   body {
+    display: flex;            /* ✔️ necesario para consistencia */
     flex-direction: column;
   }
 
@@ -119,11 +121,11 @@ section {
     overflow-x: auto;
     gap: 20px;
     border-bottom: 1px solid rgba(0,0,0,0.05);
-    scrollbar-width: none; /* Firefox */
+    scrollbar-width: none;
   }
 
   .sidebar::-webkit-scrollbar {
-    display: none; /* Chrome/Safari */
+    display: none;
   }
 
   .sidebar a {
@@ -135,13 +137,29 @@ section {
   .content {
     padding: 30px 20px;
     padding-bottom: 30vh;
-    margin-left: 0; /* 👈 CORRECCIÓN CLAVE */
+    margin-left: 0;
+    position: relative;   /* ✔️ evita bugs con z-index */
+    z-index: 2;
+  }
+
+  /* 🔥 WATERMARK FIX REAL (iOS + Android SAFE) */
+  .watermark {
+    position: fixed;
+    top: 55%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 0;
+    pointer-events: none;
   }
 
   .watermark img {
     width: 220px;
+    height: auto;
+    display: block;
+    opacity: 0.18;
   }
 }
+
 </style>
 </head>
 
