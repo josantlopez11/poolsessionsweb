@@ -122,15 +122,17 @@ section {
 /* RESPONSIVE */
 @media (max-width: 900px) {
 
-  body {
-    display: flex;            /* ✔️ necesario para consistencia */
+  html, body {
+    display: flex;     
     flex-direction: column;
+    width: 100%;
+    overflow-x: hidden;
   }
 
   .sidebar {
     width: 100%;
     height: auto;
-    position: sticky;
+    position: fixed;
     top: 0;
     background: white;
     padding: 15px;
@@ -152,11 +154,15 @@ section {
   }
 
   .content {
-    padding: 30px 20px;
-    padding-bottom: 30vh;
-    margin-left: 0;
-    position: relative;   /* ✔️ evita bugs con z-index */
-    z-index: 2;
+    margin: 0;
+    padding: 40px 18px 120px 18px;
+
+    width: 100%;
+    max-width: 100%;
+
+    box-sizing: border-box;
+
+    text-align: left;
   }
 
   /* 🔥 WATERMARK FIX REAL (iOS + Android SAFE) */
@@ -170,10 +176,10 @@ section {
   }
 
   .watermark img {
-    width: 220px;
+    width: 250px;
     height: auto;
     display: block;
-    opacity: 0.18;
+    opacity: 0.55;
   }
 }
 
