@@ -10,6 +10,13 @@
 @font-face {
   font-family: 'Agrandir';
   src: url('fonts/Agrandir-Regular.otf') format('opentype');
+  font-weight: 400;
+}
+
+@font-face {
+  font-family: 'Agrandir';
+  src: url('fonts/Agrandir-TextBold.otf') format('opentype');
+  font-weight: 700;
 }
 
 *{
@@ -39,29 +46,48 @@ body{
   gap:10px;
   height:80vh;
   padding:0 10px;
+  overflow:hidden;
 }
 
-/* COLUMNAS */
+/* COLUMNAS = CARRUSELES VERTICALES */
 .column{
   flex:1;
   display:flex;
   flex-direction:column;
-  gap:10px;
+  gap:12px;
+
+  height:80vh;
   overflow-y:auto;
+
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+}
+
+.column::-webkit-scrollbar{
+  display:none;
 }
 
 /* FOTO */
 .photo{
   width:100%;
-  aspect-ratio:1/1;
   border-radius:12px;
-  background:linear-gradient(135deg, #d9f0ec, #b8e3db);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:12px;
-  letter-spacing:2px;
+  overflow:hidden;
   cursor:pointer;
+
+  scroll-snap-align: center;
+  flex:0 0 auto;
+}
+
+.photo img{
+  width:100%;
+  height:auto;
+  display:block;
+  border-radius:12px;
+  transition: transform 0.35s ease;
+}
+
+.photo:hover img{
+  transform: scale(1.02);
 }
 
 /* LIGHTBOX */
@@ -83,16 +109,13 @@ body{
   display:flex;
 }
 
-/* IMAGEN GRANDE */
 .lightbox-img{
   width:90%;
   max-width:500px;
-  aspect-ratio:1/1;
   border-radius:12px;
-  background:linear-gradient(135deg, #d9f0ec, #b8e3db);
+  object-fit:contain;
 }
 
-/* TEXTO */
 .lightbox-text{
   margin-top:15px;
   color:white;
@@ -122,30 +145,52 @@ body{
 
   <!-- COLUMNA 1 -->
   <div class="column">
-    <div class="photo" data-text="POOL SESSION 01 - MOMENTO 1">1</div>
-    <div class="photo" data-text="POOL SESSION 01 - MOMENTO 2">2</div>
-    <div class="photo" data-text="POOL SESSION 01 - MOMENTO 3">3</div>
-    <div class="photo" data-text="POOL SESSION 01 - MOMENTO 4">4</div>
-    <div class="photo" data-text="POOL SESSION 01 - MOMENTO 5">5</div>
-    <div class="photo" data-text="POOL SESSION 01 - MOMENTO 6">6</div>
-    <div class="photo" data-text="POOL SESSION 01 - MOMENTO 7">7</div>
-    <div class="photo" data-text="POOL SESSION 01 - MOMENTO 8">8</div>
-    <div class="photo" data-text="POOL SESSION 01 - MOMENTO 9">9</div>
-    <div class="photo" data-text="POOL SESSION 01 - MOMENTO 10">10</div>
+
+    <div class="photo" data-text="POOL SESSIONS - MOMENTO 1" data-img="../frontend/assets/fotopool1.jpg">
+      <img src="../frontend/assets/fotopool1.jpg">
+    </div>
+
+    <div class="photo" data-text="POOL SESSIONS - MOMENTO 2" data-img="../frontend/assets/fotopool2.jpg">
+      <img src="../frontend/assets/fotopool2.jpg">
+    </div>
+
+    <div class="photo" data-text="POOL SESSIONS  - MOMENTO 3" data-img="../frontend/assets/fotopool3.jpg">
+      <img src="../frontend/assets/fotopool3.jpg">
+    </div>
+
+    <div class="photo" data-text="POOL SESSIONS  - MOMENTO 4" data-img="../frontend/assets/fotopool4.jpg">
+      <img src="../frontend/assets/fotopool4.jpg">
+    </div>
+
+    <div class="photo" data-text="POOL SESSIONS - MOMENTO 5" data-img="../frontend/assets/fotopool5.jpg">
+      <img src="../frontend/assets/fotopool5.jpg">
+    </div>
+
   </div>
 
   <!-- COLUMNA 2 -->
   <div class="column">
-    <div class="photo" data-text="POOL SESSION 02 - MOMENTO 1">1</div>
-    <div class="photo" data-text="POOL SESSION 02 - MOMENTO 2">2</div>
-    <div class="photo" data-text="POOL SESSION 02 - MOMENTO 3">3</div>
-    <div class="photo" data-text="POOL SESSION 02 - MOMENTO 4">4</div>
-    <div class="photo" data-text="POOL SESSION 02 - MOMENTO 5">5</div>
-    <div class="photo" data-text="POOL SESSION 02 - MOMENTO 6">6</div>
-    <div class="photo" data-text="POOL SESSION 02 - MOMENTO 7">7</div>
-    <div class="photo" data-text="POOL SESSION 02 - MOMENTO 8">8</div>
-    <div class="photo" data-text="POOL SESSION 02 - MOMENTO 9">9</div>
-    <div class="photo" data-text="POOL SESSION 02 - MOMENTO 10">10</div>
+
+    <div class="photo" data-text="POOL SESSIONS - MOMENTO 1" data-img="../frontend/assets/fotopool5.jpg">
+      <img src="../frontend/assets/fotopool5.jpg">
+    </div>
+
+    <div class="photo" data-text="POOL SESSIONS - MOMENTO 2" data-img="../frontend/assets/fotopool4.jpg">
+      <img src="../frontend/assets/fotopool4.jpg">
+    </div>
+
+    <div class="photo" data-text="POOL SESSIONS - MOMENTO 3" data-img="../frontend/assets/fotopool3.jpg">
+      <img src="../frontend/assets/fotopool3.jpg">
+    </div>
+
+    <div class="photo" data-text="POOL SESSIONS - MOMENTO 4" data-img="../frontend/assets/fotopool2.jpg">
+      <img src="../frontend/assets/fotopool2.jpg">
+    </div>
+
+    <div class="photo" data-text="POOL SESSIONS - MOMENTO 5" data-img="../frontend/assets/fotopool1.jpg">
+      <img src="../frontend/assets/fotopool1.jpg">
+    </div>
+
   </div>
 
 </div>
@@ -154,7 +199,7 @@ body{
 
 <!-- LIGHTBOX -->
 <div class="lightbox" id="lightbox">
-  <div class="lightbox-img"></div>
+  <img class="lightbox-img" id="lightboxImg">
   <div class="lightbox-text" id="lightboxText"></div>
 </div>
 
@@ -163,9 +208,11 @@ body{
 const photos = document.querySelectorAll(".photo");
 const lightbox = document.getElementById("lightbox");
 const text = document.getElementById("lightboxText");
+const lightboxImg = document.getElementById("lightboxImg");
 
 photos.forEach(p => {
   p.addEventListener("click", () => {
+    lightboxImg.src = p.getAttribute("data-img");
     text.innerText = p.getAttribute("data-text");
     lightbox.classList.add("active");
   });
