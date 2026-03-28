@@ -121,7 +121,9 @@ section {
 
 /* RESPONSIVE */
 @media (max-width: 900px) {
+
   body {
+    display: flex;            /* ✔️ necesario para consistencia */
     flex-direction: column;
   }
 
@@ -136,6 +138,11 @@ section {
     overflow-x: auto;
     gap: 20px;
     border-bottom: 1px solid rgba(0,0,0,0.05);
+    scrollbar-width: none;
+  }
+
+  .sidebar::-webkit-scrollbar {
+    display: none;
   }
 
   .sidebar a {
@@ -145,26 +152,38 @@ section {
   }
 
   .content {
+    padding: 30px 20px;
+    padding-bottom: 30vh;
     margin-left: 0;
-    padding: 40px 20px;
+    position: relative;   /* ✔️ evita bugs con z-index */
+    z-index: 2;
+  }
+
+  /* 🔥 WATERMARK FIX REAL (iOS + Android SAFE) */
+  .watermark {
+    position: fixed;
+    top: 55%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 0;
+    pointer-events: none;
   }
 
   .watermark img {
     width: 220px;
+    height: auto;
+    display: block;
+    opacity: 0.18;
   }
 }
 
-/* OFFSET PARA SCROLL UX */
-section {
-  scroll-margin-top: 25vh;
-}
 </style>
 </head>
 
 <body>
 
 <div class="watermark">
-  <img src="/backend/frontend/assets/logo-pools.png">
+  <img src="./assets/logo-pools.png">
 </div>
 
 <div class="sidebar">
