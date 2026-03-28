@@ -79,11 +79,10 @@ body{
   color:#888;
 }
 
-/* SELECT FIX iOS + CENTER PERFECT */
+/* SELECT FIX NUM BOLETOS */
 .select {
   width: 100%;
-  padding: 8px 40px 8px 12px; /* 🔥 más delgado + espacio flecha */
-  margin-bottom: 12px;
+  padding: 8px 40px 8px 12px;
 
   border-radius: 20px;
   border: 1px solid #134e4a;
@@ -102,6 +101,12 @@ body{
   background-repeat: no-repeat;
   background-position: right 14px center;
   background-size: 14px;
+}
+
+/* 🔥 CUANDO YA SE SELECCIONÓ VALOR */
+.select:focus,
+.select:valid {
+  color: #134e4a;
 }
 
 /* FIX OPTIONS */
