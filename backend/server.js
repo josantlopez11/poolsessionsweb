@@ -405,6 +405,7 @@ async function sendTicketsEmail(orderId, buyerEmail, buyerName) {
         return `
           <div style="margin-bottom:30px;">
             <h3>${t.event.name}</h3>
+            <p>${t.event.description}<p>
             <p>${t.event.event_date} ${t.event.time}</p>
             <p>${t.event.venue}</p>
             <img src="${qr}" width="150"/>
