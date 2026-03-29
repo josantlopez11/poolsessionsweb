@@ -47,94 +47,75 @@ app.post("/webhook-stripe", express.raw({ type: "application/json" }), async (re
   }
 
   // ─── EVENTO: PAGO COMPLETADO ─────────────────────────────
-if (event.type === "checkout.session.completed") {
+  if (event.type === "checkout.session.completed") {
 
-  console.log("🔥 WEBHOOK RECIBIDO");
+    console.log("🔥 WEBHOOK RECIBIDO");
 
-  // 👉 Objeto de Stripe con toda la info de la compra
-  const session = event.data.object;
+    const session = event.data.object;
+    const orderId = session.metadata?.order_id;
 
-  // 👉 ID de la orden que guardamos en metadata al crear el checkout
-  const orderId = session.metadata?.order_id;
+    console.log("📦 ORDER ID:", orderId);
 
-  console.log("📦 ORDER ID:", orderId);
+    if (!orderId) {
+      console.log("❌ No hay order_id en metadata");
+      return res.status(200).send("ok");
+    }
 
-  // ⚠️ Validación básica (por si Stripe no manda metadata)
-  if (!orderId) {
-    console.log("❌ No hay order_id en metadata");
-    return res.status(200).send("ok");
+    try {
+      // 1. actualizar orden
+      const { error: updateError } = await supabase
+        .from("orders")
+        .update({
+          payment_status: "paid",
+          stripe_session_id: session.id,
+        })
+        .eq("id", orderId);
+
+      if (updateError) {
+        console.error("❌ Error actualizando orden:", updateError);
+        return res.status(200).send("ok");
+      }
+
+      console.log("✅ Orden marcada como PAID");
+
+      // 2. obtener orden
+      const { data: orderData, error: orderError } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("id", orderId)
+        .single();
+
+      if (orderError || !orderData) {
+        console.error("❌ Error obteniendo orden:", orderError);
+        return res.status(200).send("ok");
+      }
+
+      console.log("📊 ORDER DATA:", orderData);
+
+      // 3. validar email
+      if (!orderData.buyer_email) {
+        console.log("❌ No hay email del comprador");
+        return res.status(200).send("ok");
+      }
+
+      console.log("📨 Enviando email a:", orderData.buyer_email);
+
+      // 4. enviar email
+      await sendTicketsEmail(
+        orderId,
+        orderData.buyer_email,
+        orderData.buyer_name || "INVITADO"
+      );
+
+      console.log("✅ EMAIL ENVIADO");
+
+    } catch (err) {
+      console.error("❌ ERROR GENERAL EN WEBHOOK:", err);
+    }
   }
 
-  try {
-    // ─────────────────────────────────────────────
-    // ✅ 1. ACTUALIZAR ORDEN A "PAID"
-    // ─────────────────────────────────────────────
-    const { error: updateError } = await supabase
-      .from("orders")
-      .update({
-        payment_status: "paid",
-        stripe_session_id: session.id,
-      })
-      .eq("id", orderId);
-
-    if (updateError) {
-      console.error("❌ Error actualizando orden:", updateError);
-      return res.status(200).send("ok");
-    }
-
-    console.log("✅ Orden marcada como PAID"); 
-
-    // ─────────────────────────────────────────────
-    // ✅ 2. OBTENER DATOS DE LA ORDEN (EMAIL / NOMBRE)
-    // ─────────────────────────────────────────────
-    const { data: orderData, error: orderError } = await supabase
-      .from("orders")
-      .select("*")
-      .eq("id", orderId)
-      .single();
-
-    if (orderError || !orderData) {
-      console.error("❌ Error obteniendo orden:", orderError);
-      return res.status(200).send("ok");
-    }
-
-    console.log("📊 ORDER DATA:", orderData);
-
-    // ─────────────────────────────────────────────
-    // ✅ 3. VALIDAR EMAIL DEL COMPRADOR
-    // ─────────────────────────────────────────────
-    if (!orderData.buyer_email) {
-      console.log("❌ No hay email del comprador");
-      return res.status(200).send("ok");
-    }
-
-    console.log("📨 Enviando email a:", orderData.buyer_email);
-
-    // ─────────────────────────────────────────────
-    // ✅ 4. ENVIAR EMAIL CON TICKETS
-    // ─────────────────────────────────────────────
-    await sendTicketsEmail(
-      orderId,
-      orderData.buyer_email,
-      orderData.buyer_name || "INVITADO"
-    );
-
-    console.log("✅ EMAIL ENVIADO");
-
-  } catch (err) {
-    console.error("❌ ERROR GENERAL EN WEBHOOK:", err);
-  }
-}
-
-// 👉 Stripe necesita SIEMPRE respuesta 200
-res.status(200).send("ok");
-
-  res.status(200).send("ok");
-});
-
-// 👉 GET para evitar 405 en navegador/test
-app.get("/webhook-stripe", (req, res) => {
-  res.send("Webhook activo");
+  // ✅ ÚNICA RESPUESTA FINAL (IMPORTANTE)
+  return res.status(200).send("ok");
 });
 
 

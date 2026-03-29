@@ -142,11 +142,11 @@ a {
 
   .code {
     font-size: 6px;
-    bottom: 45px;
+    bottom: 65px;
   }
 
   .ticket-number {
-    font-size: 12px;
+    font-size: 9px;
   }
 }
 
@@ -179,7 +179,7 @@ if (!orderId) {
   container.innerHTML = "<p>Orden no encontrada.</p>";
 } else {
 
-  fetch(`https://api.poolsessions.mx/confirmacion-data?order=${orderId}`)
+  fetch(`https://poolsessions.mx/confirmacion-data?order=${orderId}`)
     .then(r => r.json())
     .then(data => {
 
