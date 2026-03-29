@@ -405,7 +405,7 @@ async function sendTicketsEmail(orderId, buyerEmail, buyerName) {
         return `
           <div style="margin-bottom:30px;">
             <h3>${t.event.name}</h3>
-            <p>${t.event.date} ${t.event.time}</p>
+            <p>${t.event.event_date} ${t.event.time}</p>
             <p>${t.event.venue}</p>
             <img src="${qr}" width="150"/>
             <p>${t.ticket_code}</p>
@@ -420,7 +420,7 @@ async function sendTicketsEmail(orderId, buyerEmail, buyerName) {
       subject: '🎟️ Tus boletos - POOL SESSIONS',
       html: `
         <h2>¡Gracias ${buyerName} por tu compra!</h2>
-        <p>Aquí están tus boletos:</p>
+        <p>Aquí están tus códigos de confirmación:</p>
         ${ticketHTML.join("")}
       `
     });
