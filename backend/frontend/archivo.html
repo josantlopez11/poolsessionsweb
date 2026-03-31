@@ -59,7 +59,7 @@ body{
   height:80vh;
   overflow-y:auto;
 
-  scroll-snap-type: y mandatory;
+  scroll-snap-type: y proximity;
   scrollbar-width: none;
 }
 
@@ -80,7 +80,8 @@ body{
 
 .photo img{
   width:100%;
-  height:auto;
+  height:280px;
+  object-fit:cover;
   display:block;
   border-radius:12px;
   transition: transform 0.35s ease;
@@ -141,59 +142,7 @@ body{
 
 <div class="header">ARCHIVO</div>
 
-<div class="container">
-
-  <!-- COLUMNA 1 -->
-  <div class="column">
-
-    <div class="photo" data-text="POOL SESSIONS #1 ALAMEDA - foto por ________" data-img="./assets/fotopool1.jpg">
-      <img src="./assets/fotopool1.jpg">
-    </div>
-
-    <div class="photo" data-text="POOL SESSIONS #1 ALAMEDA - foto por ________" data-img="./assets/fotopool2.jpg">
-      <img src="./assets/fotopool2.jpg">
-    </div>
-
-    <div class="photo" data-text="POOL SESSIONS #2 DUCKFIZZ - foto por Mara Barajas" data-img="./assets/fotopool3.jpg">
-      <img src="./assets/fotopool3.jpg">
-    </div>
-
-    <div class="photo" data-text="POOL SESSIONS #1 ALAMEDA - foto por ________" data-img="./assets/fotopool4.jpg">
-      <img src="./assets/fotopool4.jpg">
-    </div>
-
-    <div class="photo" data-text="POOL SESSIONS #2 DUCK FIZZ - foto por Mara Barajas" data-img="./assets/fotopool5.jpg">
-      <img src="./assets/fotopool5.jpg">
-    </div>
-
-  </div>
-
-  <!-- COLUMNA 2 -->
-  <div class="column">
-
-    <div class="photo" data-text="POOL SESSIONS #1 ALAMEDA - foto por ________" data-img="./assets/fotopool6.jpg">
-      <img src="./assets/fotopool6.jpg">
-    </div>
-
-    <div class="photo" data-text="POOL SESSIONS #2 DUCK FIZZ - foto por Mara Barajas" data-img="./assets/fotopool7.jpg">
-      <img src="./assets/fotopool7.jpg">
-    </div>
-
-    <div class="photo" data-text="POOL SESSIONS #2 DUCK FIZZ - foto por Mara Barajas" data-img="./assets/fotopool8.jpg">
-      <img src="./assets/fotopool8.jpg">
-    </div>
-
-    <div class="photo" data-text="POOL SESSIONS #1 ALAMEDA - foto por ________" data-img="./assets/fotopool9.jpg">
-      <img src="./assets/fotopool9.jpg">
-    </div>
-
-    <div class="photo" data-text="POOL SESSIONS #2 DUCK FIZZ - foto por Mara Barajas" data-img="./assets/fotopool10.jpg">
-      <img src="./assets/fotopool10.jpg">
-    </div>
-
-  </div>
-
-</div>
+<div class="container" id="gallery"></div>
 
 <a href="index.html" class="back">VOLVER</a>
 
@@ -205,19 +154,79 @@ body{
 
 <script>
 
-const photos = document.querySelectorAll(".photo");
+// 🔹 CONFIGURACIÓN
+const sources = [
+  { pool: "pool1", author: "areli", display: "Areli", prefix: "P01_", max: 50, event: "POOL SESSION #1 ALAMEDA" },
+  { pool: "pool1", author: "kevin", display: "Kevin", prefix: "P01_", max: 50, event: "POOL SESSION #1 ALAMEDA" },
+  { pool: "pool2", author: "mara", display: "Mara Barajas", prefix: "P02_", max: 50, event: "POOL SESSION #2 DUCK FIZZ" },
+  { pool: "pool2", author: "bohemia", display: "@esabohemia", prefix: "P02_", max: 50, event: "POOL SESSION #2 DUCK FIZZ" }
+];
+
+// 🔹 LIGHTBOX refs
 const lightbox = document.getElementById("lightbox");
 const text = document.getElementById("lightboxText");
 const lightboxImg = document.getElementById("lightboxImg");
 
-photos.forEach(p => {
-  p.addEventListener("click", () => {
-    lightboxImg.src = p.getAttribute("data-img");
-    text.innerText = p.getAttribute("data-text");
-    lightbox.classList.add("active");
-  });
+// 🔹 contenedor
+const container = document.getElementById("gallery");
+
+// 🔹 crear 4 columnas
+const columns = [];
+for (let i = 0; i < 4; i++) {
+  const col = document.createElement("div");
+  col.classList.add("column");
+  columns.push(col);
+  container.appendChild(col);
+}
+
+// 🔹 recolectar imágenes
+let allPhotos = [];
+
+sources.forEach(src => {
+  for (let i = 1; i <= src.max; i++) {
+    const num = String(i).padStart(2, "0");
+
+    const path = `./assets/fotos_pools/${src.pool}/${src.author}/${src.prefix}${num}.jpg`;
+
+    allPhotos.push({
+      img: path,
+      text: `${src.event} - foto por ${src.display}`
+    });
+  }
 });
 
+// 🔥 mezclar (shuffle)
+allPhotos.sort(() => Math.random() - 0.5);
+
+// 🔹 renderizar
+allPhotos.forEach((p, index) => {
+
+  const img = new Image();
+
+  img.onload = () => {
+
+    const photo = document.createElement("div");
+    photo.classList.add("photo");
+    photo.dataset.text = p.text;
+    photo.dataset.img = p.img;
+
+    photo.appendChild(img);
+
+    const colIndex = index % 4;
+    columns[colIndex].appendChild(photo);
+
+    // LIGHTBOX
+    photo.addEventListener("click", () => {
+      lightboxImg.src = p.img;
+      text.innerText = p.text;
+      lightbox.classList.add("active");
+    });
+  };
+
+  img.src = p.img;
+});
+
+// cerrar lightbox
 lightbox.addEventListener("click", () => {
   lightbox.classList.remove("active");
 });
